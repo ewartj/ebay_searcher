@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Warhammer Scout pre-commit hook
+# Runs tests before every commit to catch regressions early.
+# To skip: git commit --no-verify
+
+set -uo pipefail
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
+# Colours
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BOLD='\033[1m'; NC='\033[0m'
+
+pass() { echo -e "  ${GREEN}✓${NC} $1"; }
+fail() { echo -e "  ${RED}✗${NC} $1"; }
+warn() { echo -e "  ${YELLOW}!${NC} $1"; }
+
+echo ""
+echo -e "${BOLD}Pre-commit checks — Warhammer Scout${NC}"
+echo "============================================================"
+
+FAILED=0
+
+# ── 1. Block .env files from being committed ─────────────────────────────────
+echo ""
+echo -e "${BOLD}[1/2] Secret / credential check${NC}"
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+
+if echo "$STAGED" | grep -qE '(^|\/)\.env$'; then
+  fail ".env file is staged — credentials must not be committed"
+  warn "Unstage it: git restore --staged .env"
+  FAILED=1
+else
+  pass "No .env files staged"
+fi
+
+# ── 2. Run the test suite ─────────────────────────────────────────────────────
+echo ""
+echo -e "${BOLD}[2/2] pytest${NC}"
+
+if uv run pytest --tb=short -q 2>&1; then
+  pass "All tests passed"
+else
+  fail "Tests failed — fix above before committing"
+  FAILED=1
+fi
+
+# ── Bail early if tests failed (don't spend AI credits on broken code) ────────
+if [ "$FAILED" -eq 1 ]; then
+  echo ""
+  echo -e "${RED}============================================================${NC}"
+  echo -e "${RED}Commit blocked. Fix the issues above and retry.${NC}"
+  echo "To skip: git commit --no-verify"
+  exit 1
+fi
+
+# ── 3. AI review (security, correctness, quality — parallel) ─────────────────
+echo ""
+echo -e "${BOLD}[3/3] AI code review${NC}"
+
+"$REPO_ROOT/review.sh" --block-on-issues
