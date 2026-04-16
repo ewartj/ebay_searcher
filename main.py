@@ -18,6 +18,9 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s — %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+# Suppress httpx request logs — they expose API keys in query params
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 log = logging.getLogger("warhammer_scout")
 
 

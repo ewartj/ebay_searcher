@@ -12,7 +12,6 @@ from models import Listing
 log = logging.getLogger(__name__)
 
 _BROWSE_BASE = "https://api.ebay.com/buy/browse/v1"
-_FINDING_BASE = "https://svcs.ebay.co.uk/services/search/FindingService/v1"
 _TOKEN_URL = "https://api.ebay.com/identity/v1/oauth2/token"
 _SCOPE = "https://api.ebay.com/oauth/api_scope"
 
@@ -110,53 +109,3 @@ def fetch_ebay_listings() -> list[Listing]:
     return listings
 
 
-def fetch_sold_prices(title: str, max_results: int = 10) -> list[float]:
-    """
-    Use the eBay Finding API to retrieve recently sold BIN prices for a title.
-    Returns a list of GBP prices (may be empty if no results found).
-    """
-    prices: list[float] = []
-
-    with httpx.Client(timeout=20) as client:
-        try:
-            resp = client.get(
-                _FINDING_BASE,
-                headers={
-                    "X-EBAY-SOA-OPERATION-NAME": "findCompletedItems",
-                    "X-EBAY-SOA-SERVICE-VERSION": "1.0.0",
-                    "X-EBAY-SOA-SECURITY-APPNAME": config.EBAY_CLIENT_ID,
-                    "X-EBAY-SOA-RESPONSE-DATA-FORMAT": "JSON",
-                },
-                params={
-                    "keywords": title,
-                    "itemFilter(0).name": "SoldItemsOnly",
-                    "itemFilter(0).value": "true",
-                    "itemFilter(1).name": "ListingType",
-                    "itemFilter(1).value": "FixedPrice",
-                    "itemFilter(2).name": "Currency",
-                    "itemFilter(2).value": "GBP",
-                    "paginationInput.entriesPerPage": max_results,
-                    "sortOrder": "EndTimeSoonest",
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-
-            items = (
-                data.get("findCompletedItemsResponse", [{}])[0]
-                .get("searchResult", [{}])[0]
-                .get("item", [])
-            )
-            for item in items:
-                try:
-                    price = float(
-                        item["sellingStatus"][0]["currentPrice"][0]["__value__"]
-                    )
-                    prices.append(price)
-                except (KeyError, IndexError, ValueError, TypeError):
-                    continue
-
-        except httpx.HTTPError as e:
-            log.warning(f"Finding API failed for '{title}': {e}")
-
-    return prices

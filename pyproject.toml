@@ -5,6 +5,7 @@ description = "Daily eBay + Vinted bargain finder for Black Library books"
 requires-python = ">=3.11"
 readme = "README.md"
 dependencies = [
+    "anthropic>=0.40.0",
     "httpx>=0.27.0",
     "python-dotenv>=1.0.0",
     "python-telegram-bot>=22.7",

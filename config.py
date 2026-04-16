@@ -8,8 +8,8 @@ load_dotenv()
 EBAY_CLIENT_ID: str = os.environ["EBAY_CLIENT_ID"]
 EBAY_CLIENT_SECRET: str = os.environ["EBAY_CLIENT_SECRET"]
 
-# --- Google Gemini (aistudio.google.com) ---
-GEMINI_API_KEY: str = os.environ["GEMINI_API_KEY"]
+# --- Anthropic (console.anthropic.com) ---
+ANTHROPIC_API_KEY: str = os.environ["ANTHROPIC_API_KEY"]
 
 # --- Telegram bot ---
 TELEGRAM_BOT_TOKEN: str = os.environ["TELEGRAM_BOT_TOKEN"]
