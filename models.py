@@ -10,6 +10,7 @@ class Listing:
     source: str          # "ebay" | "vinted"
     condition: str | None = None
     image_url: str | None = None
+    is_bundle: bool = False
 
 
 @dataclass

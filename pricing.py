@@ -3,11 +3,14 @@ Bargain detection pipeline.
 
 Priority order for establishing market value:
   1. PRICE_GUIDE — your own known values (instant, no API call)
-  2. Gemini FILTER — discard paperbacks/noise, keep collectible BL hardbacks only
-  3. Gemini PRICE  — estimate value for the filtered shortlist (single batch)
+  2. Claude FILTER — discard paperbacks/noise, keep collectible BL hardbacks only
+  3. Claude PRICE  — estimate value for the filtered shortlist (single batch)
+
+Bundles (multi-book lots) are detected separately and flagged for manual review.
 """
 import json
 import logging
+import re
 
 import anthropic
 
@@ -19,20 +22,57 @@ log = logging.getLogger(__name__)
 _client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
 _MODEL = "claude-haiku-4-5-20251001"
 
+_BUNDLE_RE = re.compile(
+    r"\bbundle\b|\bjob lot\b|\blot of \d|\bx\d+\b|\bbooks \d[-–]\d",
+    re.IGNORECASE,
+)
+
+_WARHAMMER_RE = re.compile(
+    r"warhammer|black library|horus heresy|40[,.]?000|40k|"
+    r"age of sigmar|warhammer fantasy|old world|necromunda|"
+    r"blood bowl|adeptus|space marine|chaos marine|astartes",
+    re.IGNORECASE,
+)
+
+_PAPERBACK_RE = re.compile(
+    r"\bpaperback\b|\b\(pb\)\b|\bpb\b|\bsmall pb\b|\bpocket\b",
+    re.IGNORECASE,
+)
+
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 def _lookup_price_guide(title: str) -> float | None:
-    """Return the highest matching price from PRICE_GUIDE, or None."""
+    """
+    Return the best matching price from PRICE_GUIDE for this listing title.
+    Detects whether the listing is a paperback and returns the appropriate price.
+    Returns None if no match, or if the listing is a paperback and only a
+    hardback price exists (so Claude can price it instead).
+    """
     title_lower = title.lower()
-    matches = [
-        price
-        for keyword, price in config.PRICE_GUIDE.items()
-        if keyword in title_lower
-    ]
-    return max(matches) if matches else None
+    is_paperback = bool(_PAPERBACK_RE.search(title))
+
+    best: float | None = None
+    for keyword, entry in config.PRICE_GUIDE.items():
+        if keyword not in title_lower:
+            continue
+        if isinstance(entry, dict):
+            if is_paperback:
+                price = entry.get("paperback")
+            else:
+                price = entry.get("hardback")
+            if price is None:
+                continue  # format not in guide — fall through to Claude
+        else:
+            if is_paperback:
+                continue  # plain float = hardback only — fall through to Claude
+            price = entry
+        if best is None or price > best:
+            best = price
+
+    return best
 
 
 def _parse_json_response(raw: str) -> dict | list:
@@ -44,14 +84,14 @@ def _parse_json_response(raw: str) -> dict | list:
     return json.loads(raw.strip())
 
 
-def _claude_filter(titles: list[str]) -> list[str]:
+def _claude_filter(titles: list[str], client: anthropic.Anthropic) -> list[str]:
     """
     Ask Claude which titles are collectible Black Library hardbacks worth pricing.
     Returns index numbers so the response stays tiny regardless of title length.
     """
     numbered = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(titles))
     try:
-        msg = _client.messages.create(
+        msg = client.messages.create(
             model=_MODEL,
             max_tokens=512,
             system=(
@@ -81,7 +121,7 @@ def _claude_filter(titles: list[str]) -> list[str]:
     return titles
 
 
-def _claude_price(titles: list[str]) -> dict[str, float]:
+def _claude_price(titles: list[str], client: anthropic.Anthropic) -> dict[str, float]:
     """
     Ask Claude for fair UK resale prices for a shortlist of collectible BL titles.
     Returns title -> GBP price for titles Claude can estimate.
@@ -91,9 +131,9 @@ def _claude_price(titles: list[str]) -> dict[str, float]:
 
     numbered = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(titles))
     try:
-        msg = _client.messages.create(
+        msg = client.messages.create(
             model=_MODEL,
-            max_tokens=2048,
+            max_tokens=4096,
             system=(
                 "You are an expert in Black Library Warhammer 40,000 and Horus Heresy books "
                 "and their UK secondary market resale values (eBay, Vinted)."
@@ -125,39 +165,62 @@ def _claude_price(titles: list[str]) -> dict[str, float]:
 # Public interface
 # ---------------------------------------------------------------------------
 
-def find_bargains(listings: list[Listing]) -> list[Bargain]:
+def find_bargains(
+    listings: list[Listing],
+    *,
+    claude_client: anthropic.Anthropic | None = None,
+) -> tuple[list[Bargain], list[Listing]]:
     """
-    Filter listings to those at or below BARGAIN_THRESHOLD of market value.
-    Sorted by discount percentage (best deals first).
+    Returns (bargains, bundles).
+
+    bargains — listings at or below BARGAIN_THRESHOLD of market value, best first.
+    bundles  — listings that look like multi-book lots, flagged for manual review.
     """
-    # Pass 1: price guide (no API call)
-    priced: dict[int, tuple[float, str]] = {}
-    needs_gemini: list[tuple[int, str]] = []
+    client = claude_client if claude_client is not None else _client
+
+    # Separate bundles upfront — don't try to auto-price them
+    bundles: list[Listing] = []
+    singles: list[tuple[int, Listing]] = []
 
     for i, listing in enumerate(listings):
+        if _BUNDLE_RE.search(listing.title) and _WARHAMMER_RE.search(listing.title):
+            listing.is_bundle = True
+            bundles.append(listing)
+            log.info(f"Bundle flagged for review: {listing.title!r} £{listing.price_gbp:.2f}")
+        else:
+            singles.append((i, listing))
+
+    if bundles:
+        log.info(f"{len(bundles)} bundle(s) flagged for manual review")
+
+    # Pass 1: price guide (no API call) — skip obvious paperbacks
+    priced: dict[int, tuple[float, str]] = {}
+    needs_claude: list[tuple[int, str]] = []
+
+    for i, listing in singles:
         guide_price = _lookup_price_guide(listing.title)
         if guide_price:
             priced[i] = (guide_price, "price_guide")
         else:
-            needs_gemini.append((i, listing.title))
+            needs_claude.append((i, listing.title))
 
-    # Pass 2: Gemini filter → then price only what passes
-    if needs_gemini:
-        unknown_titles = [title for _, title in needs_gemini]
+    # Pass 2: Claude filter → price only what passes
+    if needs_claude:
+        unknown_titles = [title for _, title in needs_claude]
         log.info(f"{len(unknown_titles)} titles not in price guide — sending to Claude filter")
 
-        collectible = _claude_filter(unknown_titles)
+        collectible = _claude_filter(unknown_titles, client)
 
         if collectible:
-            claude_prices = _claude_price(collectible)
+            claude_prices = _claude_price(collectible, client)
             collectible_set = set(collectible)
-            for i, title in needs_gemini:
+            for i, title in needs_claude:
                 if title in collectible_set and title in claude_prices:
                     priced[i] = (claude_prices[title], "claude_estimate")
 
     # Pass 3: apply threshold
     bargains: list[Bargain] = []
-    for i, listing in enumerate(listings):
+    for i, listing in singles:
         if i not in priced:
             log.debug(f"No market price for: {listing.title!r} — skipping")
             continue
@@ -184,4 +247,4 @@ def find_bargains(listings: list[Listing]) -> list[Bargain]:
             )
 
     bargains.sort(key=lambda b: b.discount_pct, reverse=True)
-    return bargains
+    return bargains, bundles

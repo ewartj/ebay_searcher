@@ -8,7 +8,7 @@ Run daily:      cron / systemd timer (see README)
 import logging
 import sys
 
-from notifier import format_bargains, send_telegram_message
+from notifier import format_bargains, format_bundles, send_telegram_message
 from pricing import find_bargains
 from sources.ebay import fetch_ebay_listings
 from sources.vinted import fetch_vinted_listings
@@ -52,15 +52,17 @@ def main() -> int:
     log.info(f"Total listings to evaluate: {len(listings)}")
 
     # --- Price check ---
-    bargains = find_bargains(listings)
-    log.info(f"Bargains found: {len(bargains)}")
+    bargains, bundles = find_bargains(listings)
+    log.info(f"Bargains found: {len(bargains)}, bundles for review: {len(bundles)}")
 
     # --- Notify ---
     if bargains:
-        message = format_bargains(bargains)
-        send_telegram_message(message)
+        send_telegram_message(format_bargains(bargains))
     else:
         log.info("No bargains today — no notification sent")
+
+    if bundles:
+        send_telegram_message(format_bundles(bundles))
 
     log.info("=== Warhammer Scout scan complete ===")
     return 0
