@@ -10,15 +10,25 @@ log = logging.getLogger(__name__)
 
 _TELEGRAM_URL = f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/sendMessage"
 
+# Maps internal source name to the display label used in notifications.
+# Add an entry here whenever a new source is added to sources/__init__.py.
+_SOURCE_LABEL: dict[str, str] = {
+    "ebay": "eBay",
+    "vinted": "Vinted",
+}
+
+
+def _label(source: str) -> str:
+    return _SOURCE_LABEL.get(source, source.title())
+
 
 def format_bargains(bargains: list[Bargain]) -> str:
     """Format bargains as plain text for Telegram."""
     lines = [f"Warhammer Scout — {len(bargains)} bargain(s) found today\n"]
 
     for i, b in enumerate(bargains, 1):
-        source = "eBay" if b.listing.source == "ebay" else "Vinted"
         lines.append(
-            f"{i}. [{source}] {b.listing.title}\n"
+            f"{i}. [{_label(b.listing.source)}] {b.listing.title}\n"
             f"   £{b.listing.price_gbp:.2f} (market ~£{b.market_price:.2f})"
             f" — {b.discount_pct:.0%} off\n"
             f"   {b.listing.url}"
@@ -32,9 +42,8 @@ def format_bundles(bundles: list[Listing]) -> str:
     lines = [f"Warhammer Scout — {len(bundles)} bundle(s) to review\n"]
 
     for i, b in enumerate(bundles, 1):
-        source = "eBay" if b.source == "ebay" else "Vinted"
         lines.append(
-            f"{i}. [{source}] {b.title}\n"
+            f"{i}. [{_label(b.source)}] {b.title}\n"
             f"   £{b.price_gbp:.2f}\n"
             f"   {b.url}"
         )
@@ -84,7 +93,7 @@ def send_telegram_message(text: str) -> None:
             else:
                 log.info("Telegram message sent successfully")
         except httpx.HTTPStatusError as e:
-            log.error(f"Telegram notification failed: HTTP {e.response.status_code} — {e.response.text}")
+            log.error(f"Telegram notification failed: HTTP {e.response.status_code}")
             return
         except httpx.HTTPError:
             log.error("Telegram notification failed: connection error")

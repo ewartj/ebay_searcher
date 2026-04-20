@@ -2,9 +2,10 @@
 Bargain detection pipeline.
 
 Priority order for establishing market value:
-  1. PRICE_GUIDE — your own known values (instant, no API call)
+  1. PRICE_GUIDE   — your own known values (instant, no API call)
   2. Claude FILTER — discard paperbacks/noise, keep collectible BL hardbacks only
-  3. Claude PRICE  — estimate value for the filtered shortlist (single batch)
+  3. eBay ACTIVE   — trimmed median of current eBay asking prices (real market data)
+  4. Claude PRICE  — estimate value for anything eBay couldn't price
 
 Bundles (multi-book lots) are detected separately and flagged for manual review.
 """
@@ -16,6 +17,7 @@ import anthropic
 
 import config
 from models import Bargain, Listing
+from sources.ebay_market import fetch_market_prices
 
 log = logging.getLogger(__name__)
 
@@ -204,19 +206,37 @@ def find_bargains(
         else:
             needs_claude.append((i, listing.title))
 
-    # Pass 2: Claude filter → price only what passes
+    # Pass 2: Claude filter — keep only collectible BL hardbacks
     if needs_claude:
         unknown_titles = [title for _, title in needs_claude]
         log.info(f"{len(unknown_titles)} titles not in price guide — sending to Claude filter")
 
         collectible = _claude_filter(unknown_titles, client)
+        collectible_set = set(collectible)
 
         if collectible:
-            claude_prices = _claude_price(collectible, client)
-            collectible_set = set(collectible)
+            # Pass 3: eBay active listings median (real market data, no API restrictions)
+            ebay_prices = fetch_market_prices(collectible)
+
+            still_needs_claude: list[tuple[int, str]] = []
             for i, title in needs_claude:
-                if title in collectible_set and title in claude_prices:
-                    priced[i] = (claude_prices[title], "claude_estimate")
+                if title not in collectible_set:
+                    continue
+                if title in ebay_prices:
+                    priced[i] = (ebay_prices[title], "ebay_active")
+                else:
+                    still_needs_claude.append((i, title))
+
+            # Pass 4: Claude price for anything eBay couldn't price
+            if still_needs_claude:
+                remaining = [t for _, t in still_needs_claude]
+                log.info(
+                    f"{len(remaining)} titles not priced by eBay — sending to Claude"
+                )
+                claude_prices = _claude_price(remaining, client)
+                for i, title in still_needs_claude:
+                    if title in claude_prices:
+                        priced[i] = (claude_prices[title], "claude_estimate")
 
     # Pass 3: apply threshold
     bargains: list[Bargain] = []
@@ -230,7 +250,8 @@ def find_bargains(
             continue
 
         ratio = listing.price_gbp / market_price
-        if ratio <= config.BARGAIN_THRESHOLD:
+        profit = market_price - listing.price_gbp
+        if ratio <= config.BARGAIN_THRESHOLD and profit >= config.MIN_PROFIT:
             discount_pct = 1.0 - ratio
             bargains.append(
                 Bargain(

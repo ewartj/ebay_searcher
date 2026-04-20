@@ -74,14 +74,14 @@ def fetch_vinted_listings() -> list[Listing]:
             log.debug("Vinted: no CSRF token in cookies — proceeding without")
 
         # Step 3 — search each term
-        for term in config.VINTED_SEARCH_TERMS:
+        for term, limit in config.VINTED_SEARCH_TERMS:
             try:
                 resp = client.get(
                     _CATALOG_URL,
                     headers=req_headers,
                     params={
                         "search_text": term,
-                        "per_page": 96,
+                        "per_page": limit,
                         "order": "newest_first",
                     },
                 )
