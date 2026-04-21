@@ -6,6 +6,7 @@ import pytest
 from models import Listing
 from pricing import (
     _BUNDLE_RE,
+    _EXCLUDE_RE,
     _PAPERBACK_RE,
     _WARHAMMER_RE,
     _claude_filter,
@@ -92,6 +93,36 @@ class TestParseJsonResponse:
 # ---------------------------------------------------------------------------
 # Regex patterns
 # ---------------------------------------------------------------------------
+
+class TestExcludeRe:
+    @pytest.mark.parametrize("title", [
+        "Space Marines Codex 9th Edition",
+        "Warhammer 40k Rulebook",
+        "Rule Book Age of Sigmar",
+        "Black Library Art Book 2024",
+        "How to Paint Citadel Miniatures Painting Guide",
+        "Warhammer Legends Death Guard",
+        "Starter Set Warhammer 40000",
+        "Index Astartes Space Wolves",
+    ])
+    def test_excluded_titles_match(self, title):
+        assert _EXCLUDE_RE.search(title), f"Expected match for: {title}"
+
+    @pytest.mark.parametrize("title", [
+        "Horus Rising Hardback",
+        "Betrayer Limited Edition Black Library",
+        "Legends of the Space Marines Anthology",
+        "The Flight of the Eisenstein Hardback",
+    ])
+    def test_prose_titles_do_not_match(self, title):
+        assert not _EXCLUDE_RE.search(title), f"Unexpected match for: {title}"
+
+    def test_excluded_listing_not_returned_as_bargain(self):
+        listing = _listing("Space Marines Codex 9th Edition", 5.0)
+        bargains, bundles = find_bargains([listing])
+        assert bargains == []
+        assert bundles == []
+
 
 class TestBundleRe:
     @pytest.mark.parametrize("title", [
