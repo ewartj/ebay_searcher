@@ -78,12 +78,31 @@ def _lookup_price_guide(title: str) -> float | None:
 
 
 def _parse_json_response(raw: str) -> dict | list:
-    """Strip markdown fences and parse JSON from a Claude response."""
+    """
+    Extract and parse JSON from a Claude response.
+    Handles markdown fences and preamble/postamble text that Claude occasionally
+    includes despite instructions to return only JSON.
+    """
+    raw = raw.strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
         if raw.startswith("json"):
             raw = raw[4:]
-    return json.loads(raw.strip())
+        raw = raw.strip()
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        pass
+    # Claude added text around the JSON — extract the first array or object
+    for start, end in (("[", "]"), ("{", "}")):
+        s = raw.find(start)
+        e = raw.rfind(end)
+        if s != -1 and e > s:
+            try:
+                return json.loads(raw[s : e + 1])
+            except json.JSONDecodeError:
+                continue
+    raise json.JSONDecodeError("No valid JSON found in response", raw, 0)
 
 
 def _claude_filter(titles: list[str], client: anthropic.Anthropic) -> list[str]:

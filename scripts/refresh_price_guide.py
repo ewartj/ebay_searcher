@@ -197,6 +197,8 @@ def _claude_summary(stale: list[dict], threshold: float) -> str:
             f"{data}"
         )}],
     )
+    if not msg.content:
+        return "(No AI summary available — response was filtered or empty)"
     return msg.content[0].text
 
 

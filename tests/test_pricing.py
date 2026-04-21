@@ -71,6 +71,23 @@ class TestParseJsonResponse:
         raw = "```\n[3, 4]\n```"
         assert _parse_json_response(raw) == [3, 4]
 
+    def test_preamble_text_before_array(self):
+        raw = "Sure, here are the collectible titles: [1, 3, 5]"
+        assert _parse_json_response(raw) == [1, 3, 5]
+
+    def test_postamble_text_after_array(self):
+        raw = "[2, 4]\n\nThese are the hardbacks that qualify."
+        assert _parse_json_response(raw) == [2, 4]
+
+    def test_preamble_and_postamble_around_object(self):
+        raw = 'Here are prices:\n{"Horus Rising": 30.0}\nLet me know if you need more.'
+        assert _parse_json_response(raw) == {"Horus Rising": 30.0}
+
+    def test_raises_on_no_json(self):
+        import json
+        with pytest.raises(json.JSONDecodeError):
+            _parse_json_response("No JSON here at all.")
+
 
 # ---------------------------------------------------------------------------
 # Regex patterns
