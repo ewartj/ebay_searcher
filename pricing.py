@@ -41,6 +41,14 @@ _PAPERBACK_RE = re.compile(
     re.IGNORECASE,
 )
 
+_EXCLUDE_RE = re.compile(
+    "|".join(
+        r"\b" + re.escape(kw).replace(r"\ ", r"\s+") + r"\b"
+        for kw in config.EXCLUDE_TITLE_KEYWORDS
+    ),
+    re.IGNORECASE,
+)
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -198,6 +206,13 @@ def find_bargains(
     bundles  — listings that look like multi-book lots, flagged for manual review.
     """
     client = claude_client if claude_client is not None else _client
+
+    # Drop non-prose items (codexes, rulebooks, art books, etc.) before any pricing
+    filtered = [l for l in listings if not _EXCLUDE_RE.search(l.title or "")]
+    excluded = len(listings) - len(filtered)
+    if excluded:
+        log.info(f"Excluded {excluded} non-prose listing(s) (codex/rulebook/art book/legends)")
+    listings = filtered
 
     # Separate bundles upfront — don't try to auto-price them
     bundles: list[Listing] = []

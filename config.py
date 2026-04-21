@@ -30,6 +30,16 @@ ALERT_DEDUP_DAYS: int = 30
 # Minimum acceptable listing condition. Skip anything below these thresholds.
 # eBay book conditions (best → worst): New, Like New, Very Good, Good, Acceptable
 # Vinted conditions: new_with_tags, new_without_tags, very_good, good, satisfactory
+# Title keywords that identify non-prose items to exclude from pricing entirely.
+# These match in pricing.py before any API calls are made.
+# Add terms here if new junk categories start appearing in search results.
+EXCLUDE_TITLE_KEYWORDS: list[str] = [
+    "codex", "codices", "rulebook", "rule book",
+    "art book", "artbook", "painting guide", "painting manual",
+    "warhammer legends", "army guide", "starter set", "starter box",
+    "index astartes",
+]
+
 ACCEPTED_EBAY_CONDITIONS: set[str] = {"New", "Like New", "Very Good", "Good"}
 ACCEPTED_VINTED_CONDITIONS: set[str] = {"new_with_tags", "new_without_tags", "very_good", "good"}
 
