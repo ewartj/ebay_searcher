@@ -65,6 +65,11 @@ def main() -> int:
     if args.dry_run:
         log.info("=== Warhammer Scout scan starting (DRY RUN — no notifications) ===")
     else:
+        try:
+            config.validate()
+        except ValueError as e:
+            log.error(f"Configuration error: {e}")
+            return 1
         log.info("=== Warhammer Scout scan starting ===")
         init_db()
 
@@ -77,6 +82,8 @@ def main() -> int:
             log.info(f"{source_name}: {len(fetched)} listings fetched")
             listings.extend(fetched)
             source_listing_counts[source_name] = len(fetched)
+        except (KeyboardInterrupt, SystemExit):
+            raise
         except Exception as e:
             log.error(f"{source_name} source failed: {e}")
             source_listing_counts[source_name] = 0
@@ -115,19 +122,15 @@ def main() -> int:
             )
             log.warning("Vinted health alert sent — 0 listings for multiple consecutive scans")
 
-    # --- Deduplicate against previously alerted URLs ---
+    # --- Deduplicate bargains against previously alerted URLs ---
     new_bargain_urls = filter_new_alerts(
         [b.listing.url for b in bargains], config.ALERT_DEDUP_DAYS
     )
-    new_bundle_urls = filter_new_alerts(
-        [b.url for b in bundles], config.ALERT_DEDUP_DAYS
-    )
     new_bargains = [b for b in bargains if b.listing.url in new_bargain_urls]
-    new_bundles = [b for b in bundles if b.url in new_bundle_urls]
 
-    skipped = len(bargains) - len(new_bargains) + len(bundles) - len(new_bundles)
+    skipped = len(bargains) - len(new_bargains)
     if skipped:
-        log.info(f"Dedup: {skipped} previously alerted listing(s) suppressed")
+        log.info(f"Dedup: {skipped} previously alerted bargain(s) suppressed")
 
     # --- Notify ---
     if new_bargains:
@@ -136,9 +139,14 @@ def main() -> int:
     else:
         log.info("No new bargains today — no notification sent")
 
-    if new_bundles:
-        send_bargain_alert(format_bundles(new_bundles))
-        record_alerted_urls(new_bundle_urls)
+    if bundles:
+        new_bundle_urls = filter_new_alerts(
+            [b.url for b in bundles], config.ALERT_DEDUP_DAYS
+        )
+        new_bundles = [b for b in bundles if b.url in new_bundle_urls]
+        if new_bundles:
+            send_bargain_alert(format_bundles(new_bundles))
+            record_alerted_urls(new_bundle_urls)
 
     log.info("=== Warhammer Scout scan complete ===")
     return 0

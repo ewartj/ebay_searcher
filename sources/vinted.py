@@ -71,7 +71,7 @@ def fetch_vinted_listings() -> list[Listing]:
         if csrf:
             req_headers["X-CSRF-Token"] = csrf
         else:
-            log.debug("Vinted: no CSRF token in cookies — proceeding without")
+            log.debug("Vinted: no CSRF token in cookies (read-only requests should still work)")
 
         # Step 3 — search each term
         for term, limit in config.VINTED_SEARCH_TERMS:
@@ -116,7 +116,7 @@ def fetch_vinted_listings() -> list[Listing]:
                     if not url.startswith("http"):
                         url = _BASE + url
 
-                    photos = item.get("photos", [])
+                    photos = item.get("photos") or []
                     photo = photos[0].get("url") if photos else None
 
                     listings.append(
