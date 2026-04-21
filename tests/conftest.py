@@ -10,6 +10,8 @@ os.environ["EBAY_CLIENT_SECRET"] = "test_ebay_client_secret"
 os.environ["ANTHROPIC_API_KEY"] = "test_anthropic_key"
 os.environ["TELEGRAM_BOT_TOKEN"] = "1234567890:test_bot_token_AAA"
 os.environ["TELEGRAM_CHAT_ID"] = "123456789"
+os.environ["TELEGRAM_DIGEST_BOT_TOKEN"] = "9876543210:test_digest_token_BBB"
+os.environ["TELEGRAM_DIGEST_CHAT_ID"] = "-1001234567890"
 
 import pytest
 from unittest.mock import MagicMock

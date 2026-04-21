@@ -1,5 +1,5 @@
 """Tests for the pricing / bargain-detection pipeline."""
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -70,6 +70,23 @@ class TestParseJsonResponse:
     def test_markdown_fenced_without_language_tag(self):
         raw = "```\n[3, 4]\n```"
         assert _parse_json_response(raw) == [3, 4]
+
+    def test_preamble_text_before_array(self):
+        raw = "Sure, here are the collectible titles: [1, 3, 5]"
+        assert _parse_json_response(raw) == [1, 3, 5]
+
+    def test_postamble_text_after_array(self):
+        raw = "[2, 4]\n\nThese are the hardbacks that qualify."
+        assert _parse_json_response(raw) == [2, 4]
+
+    def test_preamble_and_postamble_around_object(self):
+        raw = 'Here are prices:\n{"Horus Rising": 30.0}\nLet me know if you need more.'
+        assert _parse_json_response(raw) == {"Horus Rising": 30.0}
+
+    def test_raises_on_no_json(self):
+        import json
+        with pytest.raises(json.JSONDecodeError):
+            _parse_json_response("No JSON here at all.")
 
 
 # ---------------------------------------------------------------------------
@@ -222,12 +239,19 @@ class TestFindBargains:
         bargains, _ = find_bargains([listing])
         assert bargains == []
 
+    def test_below_min_profit_not_a_bargain(self):
+        # "deus encarmine" hardback: £30; £22 = 73% of £30 → passes discount threshold
+        # but profit = £30 - £22 = £8 < MIN_PROFIT (£10) → not flagged
+        listing = _listing("Deus Encarmine Hardback", 22.0)
+        bargains, _ = find_bargains([listing])
+        assert bargains == []
+
     def test_paperback_uses_paperback_price(self):
-        # "horus rising" paperback: £8; £4 = 50% of £8 → bargain
-        listing = _listing("Horus Rising Paperback", 4.0)
+        # "eisenhorn" paperback: £25; £12 = 48% of £25, profit £13 → bargain
+        listing = _listing("Eisenhorn Omnibus Paperback", 12.0)
         bargains, _ = find_bargains([listing])
         assert len(bargains) == 1
-        assert bargains[0].market_price == 8.0
+        assert bargains[0].market_price == 25.0
 
     def test_warhammer_bundle_flagged_for_review(self):
         listing = _listing("Warhammer Black Library bundle x5", 20.0)
@@ -266,9 +290,34 @@ class TestFindBargains:
         mock.messages.create.side_effect = mock_create
 
         listing = _listing("Rare Collector Edition Hardback", 40.0)
-        bargains, _ = find_bargains([listing], claude_client=mock)
+        with patch("pricing.fetch_market_prices", return_value={}):
+            bargains, _ = find_bargains([listing], claude_client=mock)
         assert len(bargains) == 1
         assert bargains[0].price_source == "claude_estimate"
+
+    def test_ebay_active_price_used_when_available(self):
+        mock = MagicMock()
+        mock.messages.create.return_value = MagicMock(
+            content=[MagicMock(text="[1]")]  # filter passes the title
+        )
+
+        listing = _listing("Rare Collector Edition Hardback", 20.0)
+        with patch("pricing.fetch_market_prices", return_value={"Rare Collector Edition Hardback": 60.0}):
+            bargains, _ = find_bargains([listing], claude_client=mock)
+        assert len(bargains) == 1
+        assert bargains[0].price_source == "ebay_active"
+        assert bargains[0].market_price == 60.0
+
+    def test_ebay_active_no_http_calls_in_tests(self):
+        # Verify fetch_market_prices is always patched — real HTTP would raise in CI
+        mock = MagicMock()
+        mock.messages.create.return_value = MagicMock(
+            content=[MagicMock(text="[1]")]
+        )
+        listing = _listing("Rare Collector Edition Hardback", 15.0)
+        with patch("pricing.fetch_market_prices", return_value={}) as mock_fetch:
+            find_bargains([listing], claude_client=mock)
+        mock_fetch.assert_called_once()
 
     def test_empty_listings_returns_empty(self):
         bargains, bundles = find_bargains([])

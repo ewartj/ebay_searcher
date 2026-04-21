@@ -1,6 +1,9 @@
 # Credentials
 .env
 
+# Runtime data (price history DB — local only, not committed)
+data/
+
 # Python
 __pycache__/
 *.pyc

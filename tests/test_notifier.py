@@ -2,7 +2,7 @@
 import pytest
 
 from models import Bargain, Listing
-from notifier import _split_message, format_bargains, format_bundles
+from notifier import _label, _split_message, format_bargains, format_bundles
 
 
 def _listing(title: str, price: float, source: str = "ebay", url: str = "https://ebay.co.uk/itm/1") -> Listing:
@@ -116,3 +116,14 @@ class TestFormatBundles:
     def test_contains_url(self):
         bundles = [_listing("Bundle", 10.0, url="https://vinted.co.uk/items/99")]
         assert "https://vinted.co.uk/items/99" in format_bundles(bundles)
+
+
+class TestLabel:
+    def test_ebay_returns_display_label(self):
+        assert _label("ebay") == "eBay"
+
+    def test_vinted_returns_display_label(self):
+        assert _label("vinted") == "Vinted"
+
+    def test_unknown_source_falls_back_to_title_case(self):
+        assert _label("depop") == "Depop"
