@@ -76,7 +76,7 @@ Be concise — under 8 lines total.
 $LABEL:
 $CONTENT" \
     --allowedTools "" \
-    --max-turns 1 \
+    --max-turns 3 \
     2>/dev/null | sed "s/^/[$name] /" | tee "$outfile"
 }
 
