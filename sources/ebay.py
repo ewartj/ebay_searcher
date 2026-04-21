@@ -54,6 +54,11 @@ def fetch_ebay_listings() -> list[Listing]:
                     if price <= 0:
                         continue
 
+                    condition = item.get("condition")
+                    if condition and condition not in config.ACCEPTED_EBAY_CONDITIONS:
+                        log.debug(f"eBay: skipping '{item.get('title', '')}' — condition '{condition}'")
+                        continue
+
                     listings.append(
                         Listing(
                             title=item.get("title", ""),

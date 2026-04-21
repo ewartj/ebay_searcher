@@ -21,7 +21,7 @@ import anthropic
 
 import config
 from db import _DB_PATH, get_genre_trends, init_db
-from notifier import send_telegram_message
+from notifier import send_digest_alert
 from sources.reddit import fetch_signals
 
 logging.basicConfig(
@@ -147,7 +147,7 @@ def main() -> None:
         print("=" * 60)
         log.info("Dry run — digest printed, not sent to Telegram")
     else:
-        send_telegram_message(message)
+        send_digest_alert(message)
         log.info("Weekly digest sent to Telegram")
 
 

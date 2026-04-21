@@ -107,6 +107,11 @@ def fetch_vinted_listings() -> list[Listing]:
                     if price is None:
                         continue
 
+                    condition = item.get("status")
+                    if condition and condition not in config.ACCEPTED_VINTED_CONDITIONS:
+                        log.debug(f"Vinted: skipping '{item.get('title', '')}' — condition '{condition}'")
+                        continue
+
                     url = item.get("url") or f"/items/{item_id}"
                     if not url.startswith("http"):
                         url = _BASE + url

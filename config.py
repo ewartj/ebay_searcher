@@ -13,12 +13,30 @@ EBAY_CLIENT_SECRET: str = os.environ["EBAY_CLIENT_SECRET"]
 # --- Anthropic (console.anthropic.com) ---
 ANTHROPIC_API_KEY: str = os.environ["ANTHROPIC_API_KEY"]
 
-# --- Telegram bot ---
+# --- Telegram — bargain alerts (daily buys) ---
 TELEGRAM_BOT_TOKEN: str = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID: str = os.environ["TELEGRAM_CHAT_ID"]
 
+# --- Telegram — market research digest (weekly) ---
+TELEGRAM_DIGEST_BOT_TOKEN: str = os.environ["TELEGRAM_DIGEST_BOT_TOKEN"]
+TELEGRAM_DIGEST_CHAT_ID: str = os.environ["TELEGRAM_DIGEST_CHAT_ID"]
+
 # Flag a listing as a bargain if its price is at or below this fraction of market value.
 # 0.70 = 30% below market
+# How many days before a previously alerted listing URL can be alerted again.
+# Handles relists — a book relisted after 30 days is worth flagging again.
+ALERT_DEDUP_DAYS: int = 30
+
+# Minimum acceptable listing condition. Skip anything below these thresholds.
+# eBay book conditions (best → worst): New, Like New, Very Good, Good, Acceptable
+# Vinted conditions: new_with_tags, new_without_tags, very_good, good, satisfactory
+ACCEPTED_EBAY_CONDITIONS: set[str] = {"New", "Like New", "Very Good", "Good"}
+ACCEPTED_VINTED_CONDITIONS: set[str] = {"new_with_tags", "new_without_tags", "very_good", "good"}
+
+# Warn via Telegram if Vinted returns 0 listings this many scans in a row
+# (usually means the session cookie has expired)
+VINTED_ZERO_ALERT_RUNS: int = 2
+
 BARGAIN_THRESHOLD: float = 0.70
 
 # Minimum expected profit (market price minus listing price) to flag as a bargain.
@@ -97,7 +115,6 @@ REDDIT_SUBREDDITS: list[str] = [
 NEWS_FEEDS: list[tuple[str, str]] = [
     ("The Guardian Books", "https://www.theguardian.com/books/rss"),
     ("Locus Magazine",     "https://locusmag.com/feed/"),
-    ("Orbit Books",        "https://www.orbitbooks.net/feed/"),
     ("io9",                "https://io9.gizmodo.com/rss"),
 ]
 
@@ -110,6 +127,8 @@ def validate() -> None:
         "ANTHROPIC_API_KEY": ANTHROPIC_API_KEY,
         "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
         "TELEGRAM_CHAT_ID": TELEGRAM_CHAT_ID,
+        "TELEGRAM_DIGEST_BOT_TOKEN": TELEGRAM_DIGEST_BOT_TOKEN,
+        "TELEGRAM_DIGEST_CHAT_ID": TELEGRAM_DIGEST_CHAT_ID,
     }
     missing = [name for name, val in required.items() if not val]
     if missing:

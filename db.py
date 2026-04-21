@@ -71,6 +71,24 @@ def init_db() -> None:
             );
             CREATE INDEX IF NOT EXISTS idx_gp_label    ON genre_prices(label);
             CREATE INDEX IF NOT EXISTS idx_gp_tracked  ON genre_prices(tracked_at);
+
+            CREATE TABLE IF NOT EXISTS alerted_listings (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                url        TEXT NOT NULL UNIQUE,
+                alerted_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_al_url      ON alerted_listings(url);
+            CREATE INDEX IF NOT EXISTS idx_al_alerted  ON alerted_listings(alerted_at);
+
+            CREATE TABLE IF NOT EXISTS source_counts (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                scan_id    INTEGER NOT NULL REFERENCES scans(id),
+                source     TEXT NOT NULL,
+                count      INTEGER NOT NULL,
+                scanned_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_sc_source   ON source_counts(source);
+            CREATE INDEX IF NOT EXISTS idx_sc_scanned  ON source_counts(scanned_at);
         """)
 
 
@@ -244,3 +262,66 @@ def get_frequent_bargain_titles(days: int = 90, limit: int = 20) -> list[dict]:
             (f"-{days} days", limit),
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Alert deduplication
+# ---------------------------------------------------------------------------
+
+def filter_new_alerts(urls: list[str], dedup_days: int = 30) -> list[str]:
+    """Return only URLs not already alerted within the last dedup_days days."""
+    if not urls:
+        return []
+    with _connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT url FROM alerted_listings
+            WHERE url IN ({','.join('?' * len(urls))})
+              AND alerted_at >= datetime('now', ?)
+            """,
+            (*urls, f"-{dedup_days} days"),
+        ).fetchall()
+    already_seen = {r["url"] for r in rows}
+    return [u for u in urls if u not in already_seen]
+
+
+def record_alerted_urls(urls: list[str]) -> None:
+    """Mark URLs as alerted so they won't trigger duplicate notifications."""
+    if not urls:
+        return
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        conn.executemany(
+            "INSERT OR REPLACE INTO alerted_listings (url, alerted_at) VALUES (?, ?)",
+            [(url, now) for url in urls],
+        )
+    log.debug(f"DB: recorded {len(urls)} alerted URL(s)")
+
+
+# ---------------------------------------------------------------------------
+# Source health tracking
+# ---------------------------------------------------------------------------
+
+def record_source_counts(scan_id: int, counts: dict[str, int]) -> None:
+    """Record how many listings each source returned for a given scan."""
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        conn.executemany(
+            "INSERT INTO source_counts (scan_id, source, count, scanned_at) VALUES (?, ?, ?, ?)",
+            [(scan_id, source, count, now) for source, count in counts.items()],
+        )
+
+
+def get_recent_source_counts(source: str, limit: int = 3) -> list[int]:
+    """Return listing counts for the last N scans from a given source, newest first."""
+    with _connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT count FROM source_counts
+            WHERE source = ?
+            ORDER BY scanned_at DESC
+            LIMIT ?
+            """,
+            (source, limit),
+        ).fetchall()
+    return [r["count"] for r in rows]

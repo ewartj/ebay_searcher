@@ -13,8 +13,15 @@ import sys
 from pathlib import Path
 
 import config
-from db import init_db, record_scan
-from notifier import format_bargains, format_bundles, send_telegram_message
+from db import (
+    filter_new_alerts,
+    get_recent_source_counts,
+    init_db,
+    record_alerted_urls,
+    record_scan,
+    record_source_counts,
+)
+from notifier import format_bargains, format_bundles, send_bargain_alert
 from pricing import find_bargains
 from sources import SOURCES
 
@@ -62,14 +69,17 @@ def main() -> int:
         init_db()
 
     listings = []
+    source_listing_counts: dict[str, int] = {}
 
     for source_name, fetch in SOURCES.items():
         try:
             fetched = fetch()
             log.info(f"{source_name}: {len(fetched)} listings fetched")
             listings.extend(fetched)
+            source_listing_counts[source_name] = len(fetched)
         except Exception as e:
             log.error(f"{source_name} source failed: {e}")
+            source_listing_counts[source_name] = 0
 
     if not listings:
         log.warning("No listings retrieved from any source — check credentials")
@@ -90,16 +100,45 @@ def main() -> int:
         return 0
 
     # --- Record to price history DB ---
-    record_scan(listings, bargains)
+    scan_id = record_scan(listings, bargains)
+    record_source_counts(scan_id, source_listing_counts)
+
+    # --- Vinted health check ---
+    vinted_count = source_listing_counts.get("vinted", 0)
+    if vinted_count == 0:
+        recent = get_recent_source_counts("vinted", limit=config.VINTED_ZERO_ALERT_RUNS)
+        if len(recent) >= config.VINTED_ZERO_ALERT_RUNS and all(c == 0 for c in recent):
+            send_bargain_alert(
+                "⚠️ Warhammer Scout — Vinted returned 0 listings for "
+                f"{config.VINTED_ZERO_ALERT_RUNS} scans in a row.\n"
+                "The session cookie may have expired. Check Vinted access."
+            )
+            log.warning("Vinted health alert sent — 0 listings for multiple consecutive scans")
+
+    # --- Deduplicate against previously alerted URLs ---
+    new_bargain_urls = filter_new_alerts(
+        [b.listing.url for b in bargains], config.ALERT_DEDUP_DAYS
+    )
+    new_bundle_urls = filter_new_alerts(
+        [b.url for b in bundles], config.ALERT_DEDUP_DAYS
+    )
+    new_bargains = [b for b in bargains if b.listing.url in new_bargain_urls]
+    new_bundles = [b for b in bundles if b.url in new_bundle_urls]
+
+    skipped = len(bargains) - len(new_bargains) + len(bundles) - len(new_bundles)
+    if skipped:
+        log.info(f"Dedup: {skipped} previously alerted listing(s) suppressed")
 
     # --- Notify ---
-    if bargains:
-        send_telegram_message(format_bargains(bargains))
+    if new_bargains:
+        send_bargain_alert(format_bargains(new_bargains))
+        record_alerted_urls(new_bargain_urls)
     else:
-        log.info("No bargains today — no notification sent")
+        log.info("No new bargains today — no notification sent")
 
-    if bundles:
-        send_telegram_message(format_bundles(bundles))
+    if new_bundles:
+        send_bargain_alert(format_bundles(new_bundles))
+        record_alerted_urls(new_bundle_urls)
 
     log.info("=== Warhammer Scout scan complete ===")
     return 0

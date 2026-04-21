@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from sources.reddit import _parse_feed, fetch_signals
+from sources.reddit import _parse_feed, _sanitize_xml, fetch_signals
 
 
 # --- XML helpers ---
@@ -90,6 +90,29 @@ class TestParseFeed:
 
     def test_returns_empty_on_invalid_xml(self):
         assert _parse_feed("not xml at all {{{{") == []
+
+    def test_html_entities_in_feed_content_do_not_cause_parse_error(self):
+        # &nbsp; and &mdash; are valid HTML but undefined in XML without DOCTYPE.
+        # They must be escaped to &amp;nbsp; etc. so ET.fromstring doesn't raise.
+        xml = _rss_feed([{"title": "New &amp; limited&nbsp;edition &mdash; sold out",
+                          "pubDate": "Sun, 20 Apr 2026 10:00:00 +0000"}])
+        # Inject raw entities into the XML string (bypassing our helper's escaping)
+        raw_xml = xml.replace("&amp;nbsp;", "&nbsp;").replace("&amp;mdash;", "&mdash;")
+        items = _parse_feed(raw_xml)
+        assert len(items) == 1
+
+    def test_sanitize_xml_escapes_html_entities(self):
+        assert "&amp;nbsp;" in _sanitize_xml("hello&nbsp;world")
+        assert "&amp;mdash;" in _sanitize_xml("one&mdash;two")
+
+    def test_sanitize_xml_preserves_valid_xml_entities(self):
+        # &amp; &lt; &gt; &quot; &apos; must not be double-escaped
+        assert _sanitize_xml("&amp;") == "&amp;"
+        assert _sanitize_xml("&lt;b&gt;") == "&lt;b&gt;"
+
+    def test_sanitize_xml_escapes_bare_ampersand_in_url(self):
+        # &utm_source= is a bare & that should become &amp;utm_source=
+        assert "&amp;utm_source=" in _sanitize_xml("https://example.com?a=1&utm_source=rss")
 
     def test_atom_published_timestamp_parsed(self):
         xml = _atom_feed([{"title": "x", "published": "2026-04-20T10:00:00+00:00"}])

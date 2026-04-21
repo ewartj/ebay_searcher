@@ -13,7 +13,7 @@ class TestFetchEbayListings:
             "title": title,
             "price": {"value": price, "currency": "GBP"},
             "itemWebUrl": f"https://www.ebay.co.uk/itm/{item_id}",
-            "condition": "Used",
+            "condition": "Very Good",
             "image": {"imageUrl": "https://i.ebayimg.com/thumb.jpg"},
         }
 

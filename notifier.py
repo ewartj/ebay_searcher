@@ -1,4 +1,4 @@
-"""Telegram notification — sends a daily bargain summary to your phone."""
+"""Telegram notifications — bargain alerts and weekly market digest."""
 import logging
 
 import httpx
@@ -7,8 +7,6 @@ import config
 from models import Bargain, Listing
 
 log = logging.getLogger(__name__)
-
-_TELEGRAM_URL = f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/sendMessage"
 
 # Maps internal source name to the display label used in notifications.
 # Add an entry here whenever a new source is added to sources/__init__.py.
@@ -73,15 +71,16 @@ def _split_message(text: str) -> list[str]:
     return chunks
 
 
-def send_telegram_message(text: str) -> None:
-    """Send a message to the configured Telegram chat, splitting if over 4096 chars."""
+def send_telegram_message(text: str, *, bot_token: str, chat_id: str) -> None:
+    """Send a message to a Telegram chat, splitting if over 4096 chars."""
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
     chunks = _split_message(text)
     for i, chunk in enumerate(chunks, 1):
         try:
             resp = httpx.post(
-                _TELEGRAM_URL,
+                url,
                 json={
-                    "chat_id": config.TELEGRAM_CHAT_ID,
+                    "chat_id": chat_id,
                     "text": chunk,
                     "disable_web_page_preview": True,
                 },
@@ -98,3 +97,17 @@ def send_telegram_message(text: str) -> None:
         except httpx.HTTPError:
             log.error("Telegram notification failed: connection error")
             return
+
+
+def send_bargain_alert(text: str) -> None:
+    """Send to the bargain alerts channel (daily buys)."""
+    send_telegram_message(text, bot_token=config.TELEGRAM_BOT_TOKEN, chat_id=config.TELEGRAM_CHAT_ID)
+
+
+def send_digest_alert(text: str) -> None:
+    """Send to the market research channel (weekly digest)."""
+    send_telegram_message(
+        text,
+        bot_token=config.TELEGRAM_DIGEST_BOT_TOKEN,
+        chat_id=config.TELEGRAM_DIGEST_CHAT_ID,
+    )

@@ -23,13 +23,10 @@ _ATOM_NS = "http://www.w3.org/2005/Atom"
 # old.reddit.com serves RSS without the auth restrictions that www.reddit.com now enforces
 _REDDIT_RSS = "https://old.reddit.com/r/{sub}/new.rss"
 
-# Common HTML entities that appear in RSS feeds but are not valid XML without a DOCTYPE
-_HTML_ENTITIES = {
-    "&nbsp;": " ", "&mdash;": "—", "&ndash;": "–", "&lsquo;": "'",
-    "&rsquo;": "'", "&ldquo;": "\u201c", "&rdquo;": "\u201d",
-    "&hellip;": "…", "&amp;amp;": "&amp;",
-}
-
+# Escape & unless it starts one of the 5 XML-native named entities or a numeric reference.
+# Using [a-zA-Z][a-zA-Z0-9]* would wrongly exempt &nbsp;, &mdash; etc. — those are HTML
+# entities that XML doesn't know without a DOCTYPE and must be escaped.
+_BARE_AMP_RE = re.compile(r"&(?!(?:amp|lt|gt|quot|apos|#[0-9]+|#x[0-9a-fA-F]+);)")
 _SIGNAL_RE: dict[str, re.Pattern] = {
     "adaptation": re.compile(
         r"\b(tv series|television|film|movie|adaptation|netflix|amazon prime|"
@@ -81,21 +78,24 @@ def _parse_date(s: str) -> float:
 
 
 def _sanitize_xml(xml_text: str) -> str:
-    """Replace common HTML entities that are invalid in XML without a DOCTYPE."""
-    for entity, replacement in _HTML_ENTITIES.items():
-        xml_text = xml_text.replace(entity, replacement)
-    return xml_text
+    """Escape bare & that aren't part of a valid XML/HTML entity reference."""
+    return _BARE_AMP_RE.sub("&amp;", xml_text)
 
 
-def _parse_feed(xml_text: str) -> list[dict]:
+def _parse_feed(xml_text: str, source: str = "") -> list[dict]:
     """
     Parse RSS 2.0 or Atom XML into list of {title, url, published_ts, text}.
     Returns empty list on parse error.
     """
+    label = f" ({source})" if source else ""
+    stripped = xml_text.lstrip()
+    if stripped.lower().startswith(("<!doctype", "<html")):
+        log.warning(f"Feed{label} returned HTML instead of RSS/Atom — check the feed URL")
+        return []
     try:
         root = ET.fromstring(_sanitize_xml(xml_text))
     except ET.ParseError as e:
-        log.warning(f"XML parse error: {e}")
+        log.warning(f"XML parse error{label}: {e}")
         return []
 
     if _ATOM_NS in root.tag:
@@ -183,7 +183,7 @@ def fetch_signals(
             with httpx.Client(timeout=15, headers=_HEADERS, follow_redirects=True) as client:
                 resp = client.get(url)
             resp.raise_for_status()
-            items = _parse_feed(resp.text)
+            items = _parse_feed(resp.text, source=f"r/{sub}")
             found = _score_items(items, f"r/{sub}", cutoff, author_filter=True)
             signals.extend(found)
             log.debug(f"r/{sub}: {len(items)} entries, {len(found)} signals")
@@ -197,7 +197,7 @@ def fetch_signals(
             try:
                 resp = client.get(feed_url)
                 resp.raise_for_status()
-                items = _parse_feed(resp.text)
+                items = _parse_feed(resp.text, source=feed_name)
                 # Publisher feeds are on-topic by definition — no author filter needed
                 found = _score_items(items, feed_name, cutoff, author_filter=False)
                 signals.extend(found)
