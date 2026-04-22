@@ -31,17 +31,17 @@ class TestLookupPriceGuide:
         assert _lookup_price_guide("Titanicus PB") is None
 
     def test_dict_entry_hardback(self):
-        # "horus rising": {"hardback": 30.0, "paperback": 8.0}
-        assert _lookup_price_guide("Horus Rising Hardback") == 30.0
+        # "horus rising": {"hardback": 20.0, "paperback": 5.0}
+        assert _lookup_price_guide("Horus Rising Hardback") == 20.0
 
     def test_dict_entry_paperback(self):
-        assert _lookup_price_guide("Horus Rising Paperback") == 8.0
+        assert _lookup_price_guide("Horus Rising Paperback") == 5.0
 
     def test_no_match_returns_none(self):
         assert _lookup_price_guide("Harry Potter and the Philosopher's Stone") is None
 
     def test_case_insensitive(self):
-        assert _lookup_price_guide("HORUS RISING HARDBACK") == 30.0
+        assert _lookup_price_guide("HORUS RISING HARDBACK") == 20.0
 
     def test_best_price_wins_when_multiple_keys_match(self):
         # "saturnine": {"hardback": 55.0, ...} — only one key should match, check value
@@ -259,11 +259,11 @@ def _listing(title: str, price: float, source: str = "ebay") -> Listing:
 
 class TestFindBargains:
     def test_price_guide_bargain_detected(self):
-        # "horus rising" hardback: £30; 30% below = ≤ £21; £15 qualifies
-        listing = _listing("Horus Rising Hardback", 15.0)
+        # "horus rising" hardback: £20; must be ≤70% (≤£14) and profit ≥£10 (≤£10)
+        listing = _listing("Horus Rising Hardback", 8.0)
         wh_bargains, _, _, _ = find_bargains([listing])
         assert len(wh_bargains) == 1
-        assert wh_bargains[0].discount_pct == pytest.approx(0.5)
+        assert wh_bargains[0].discount_pct == pytest.approx(0.6)
         assert wh_bargains[0].price_source == "price_guide"
 
     def test_price_guide_not_a_bargain(self):
@@ -301,7 +301,7 @@ class TestFindBargains:
 
     def test_bargains_sorted_by_discount_descending(self):
         listings = [
-            _listing("Horus Rising Hardback", 20.0),  # 20/30 = 33% off
+            _listing("Horus Rising Hardback", 8.0),   # 8/20 = 60% off
             _listing("Saturnine Hardback", 10.0),      # 10/55 = 82% off
         ]
         wh_bargains, _, _, _ = find_bargains(listings)

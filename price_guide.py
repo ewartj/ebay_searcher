@@ -33,35 +33,36 @@ PRICE_GUIDE: dict[str, Entry] = {
     # -------------------------------------------------------------------------
     # Horus Heresy — Main Series
     # -------------------------------------------------------------------------
-    "horus rising":                  {"hardback": 30.0, "paperback": 8.0},
-    "false gods":                    {"hardback": 28.0, "paperback": 7.0},
-    "galaxy in flames":              {"hardback": 28.0, "paperback": 7.0},
-    "flight of the eisenstein":      {"hardback": 28.0, "paperback": 7.0},
-    "fulgrim":                       {"hardback": 35.0, "paperback": 8.0},
+    "horus rising":                  {"hardback": 20.0, "paperback": 5.0},
+    "false gods":                    {"hardback": 28.0, "paperback": 5.0},
+    "galaxy in flames":              {"hardback": 28.0, "paperback": 5.0},
+    "flight of the eisenstein":      {"hardback": 28.0, "paperback": 5.0},
+    "fulgrim":                       {"hardback": 35.0, "paperback": 5.0},
     "descent of angels":             {"hardback": 25.0, "paperback": 7.0},
-    "horus heresy: legion":          {"hardback": 40.0, "paperback": 8.0},
+    "horus heresy: legion":          {"hardback": 40.0, "paperback": 25.0},
     "battle for the abyss":          {"hardback": 22.0, "paperback": 6.0},
-    "mechanicum":                    {"hardback": 35.0, "paperback": 8.0},
+    "mechanicum":                    {"hardback": 35.0, "paperback": 20.0},
     "tales of heresy":               {"hardback": 25.0, "paperback": 7.0},
-    "fallen angels":                 {"hardback": 25.0, "paperback": 7.0},
-    "a thousand sons":               {"hardback": 40.0, "paperback": 9.0},
+    "fallen angels":                 {"hardback": 25.0, "paperback": 10.0},
+    "legion abnett":                 {"hardback": 25.0, "paperback": 15.0},
+    "a thousand sons":               {"hardback": 40.0, "paperback": 15.0},
     "nemesis":                       {"hardback": 30.0, "paperback": 7.0},
-    "the first heretic":             {"hardback": 35.0, "paperback": 8.0},
+    "the first heretic":             {"hardback": 15.0, "paperback": 5.0},
     "prospero burns":                {"hardback": 40.0, "paperback": 9.0},
-    "horus heresy age of darkness":  28.0,
+    "horus heresy age of darkness":  {"hardback": 28.0, "paperback": 11.0},
     "the outcast dead":              {"hardback": 28.0, "paperback": 7.0},
-    "deliverance lost":              {"hardback": 28.0, "paperback": 7.0},
+    "deliverance lost":              {"hardback": 28.0, "paperback": 10.0},
     "know no fear":                  {"hardback": 40.0, "paperback": 9.0},
     "the primarchs":                 {"hardback": 35.0, "paperback": 8.0},
     "fear to tread":                 {"hardback": 35.0, "paperback": 8.0},
     "shadows of treachery":          {"hardback": 28.0, "paperback": 7.0},
     "angel exterminatus":            {"hardback": 35.0, "paperback": 8.0},
     "betrayer":                      {"hardback": 40.0, "paperback": 10.0},
-    "mark of calth":                 {"hardback": 28.0, "paperback": 7.0},
+    "mark of calth":                 {"hardback": 28.0, "paperback": 20.0},
     "vulkan lives":                  {"hardback": 28.0, "paperback": 7.0},
     "the unremembered empire":       {"hardback": 35.0, "paperback": 8.0},
     "vengeful spirit":               {"hardback": 35.0, "paperback": 8.0},
-    "the damnation of pythos":       {"hardback": 22.0, "paperback": 6.0},
+    "the damnation of pythos":       {"hardback": 22.0, "paperback": 18.0},
     "legacies of betrayal":          {"hardback": 30.0, "paperback": 7.0},
     "deathfire":                     {"hardback": 28.0, "paperback": 7.0},
     "war without end":               {"hardback": 28.0, "paperback": 7.0},
@@ -79,12 +80,13 @@ PRICE_GUIDE: dict[str, Entry] = {
     "malevolence":                   {"hardback": 35.0, "paperback": 8.0},
     "lost and the damned":           {"hardback": 40.0, "paperback": 9.0},
     "first wall":                    {"hardback": 40.0, "paperback": 9.0},
-    "solar war":                     {"hardback": 45.0, "paperback": 10.0},
+    "solar war":                     {"hardback": 45.0, "paperback": 8.0},
     "saturnine":                     {"hardback": 55.0, "paperback": 12.0},
     "mortis":                        {"hardback": 45.0, "paperback": 10.0},
     "warhawk":                       {"hardback": 40.0, "paperback": 9.0},
     "echoes of eternity":            {"hardback": 40.0, "paperback": 9.0},
     "end and the death":             {"hardback": 55.0, "paperback": 12.0},
+    "promethian sun":             {"hardback": 30.0, "paperback": 12.0},
 
     # -------------------------------------------------------------------------
     # Siege of Terra
@@ -109,7 +111,8 @@ PRICE_GUIDE: dict[str, Entry] = {
     "ferrus manus":               35.0,
     "vulkan: lord of drakes":     35.0,
     "mortarion":                  40.0,
-    "sanguinius":                 45.0,
+    "sanguinius: the great angel": 45.0,
+    "the seventh serpent": 40.0,
 
     # -------------------------------------------------------------------------
     # Eisenhorn / Ravenor / Bequin — omnibus PBs are valuable
@@ -141,6 +144,8 @@ PRICE_GUIDE: dict[str, Entry] = {
     "salvations reach":      {"hardback": 35.0, "paperback": 9.0},
     "the warmaster":         {"hardback": 40.0, "paperback": 10.0},
     "anarch":                {"hardback": 40.0, "paperback": 10.0},
+    "the lost":              {"paperback": 25.0},
+    "the saint":              {"paperback": 25.0},
     "the vincula insurgency": 40.0,
 
     # -------------------------------------------------------------------------
@@ -150,12 +155,13 @@ PRICE_GUIDE: dict[str, Entry] = {
     "blood reaver":       {"hardback": 40.0, "paperback": 12.0},
     "void stalker":       {"hardback": 40.0, "paperback": 12.0},
     "night lords trilogy": 100.0,
+    "night lords omnibus": {"paperback": 12.0},
 
     # -------------------------------------------------------------------------
     # Black Legion / Talon of Horus
     # -------------------------------------------------------------------------
-    "talon of horus": {"hardback": 45.0, "paperback": 15.0},
-    "black legion":   {"hardback": 40.0, "paperback": 12.0},
+    "talon of horus": {"hardback": 20.0, "paperback": 15.0},
+    "black legion":   {"hardback": 20.0, "paperback": 12.0},
 
     # -------------------------------------------------------------------------
     # Ahriman Series
@@ -173,13 +179,15 @@ PRICE_GUIDE: dict[str, Entry] = {
     "wolfblade":      {"hardback": 28.0, "paperback": 7.0},
     "sons of fenris": {"hardback": 28.0, "paperback": 7.0},
     "wolf's honour":  {"hardback": 28.0, "paperback": 7.0},
+    "space wolf omnibus": {"paperback": 7.0},
+    "space wolf omnibus 2": {"paperback": 13.0},
 
     # -------------------------------------------------------------------------
     # Ciaphas Cain — omnibus PBs are popular
     # -------------------------------------------------------------------------
-    "hero of the imperium":    {"hardback": 35.0, "paperback": 20.0},
-    "defender of the imperium":{"hardback": 35.0, "paperback": 20.0},
-    "saviour of the imperium": {"hardback": 35.0, "paperback": 20.0},
+    "hero of the imperium":    {"hardback": 35.0, "paperback": 10.0},
+    "defender of the imperium":{"hardback": 35.0, "paperback": 30.0},
+    "saviour of the imperium": {"hardback": 35.0, "paperback": 50.0},
     "ciaphas cain":            {"hardback": 30.0, "paperback": 15.0},
 
     # -------------------------------------------------------------------------
@@ -192,6 +200,8 @@ PRICE_GUIDE: dict[str, Entry] = {
     "courage and honour":    {"hardback": 28.0, "paperback": 7.0},
     "the chapter's due":     {"hardback": 30.0, "paperback": 8.0},
     "the unforgiving minute": 30.0,
+    "ultramarine omnibus 2": {"paperback": 20.0},
+    "deathwatch omnibus": {"paperback": 30.0},
 
     # -------------------------------------------------------------------------
     # Dark Imperium Series
@@ -200,6 +210,7 @@ PRICE_GUIDE: dict[str, Entry] = {
     "plague war":    {"hardback": 35.0, "paperback": 10.0},
     "godblight":     {"hardback": 35.0, "paperback": 10.0},
     "indomitus novel": 40.0,
+    "dark imperium trilogy complete": {"paperback": 20.0},
 
     # -------------------------------------------------------------------------
     # Path of the Eldar / Ynnari
@@ -217,12 +228,14 @@ PRICE_GUIDE: dict[str, Entry] = {
     "deus sanguinius":   {"hardback": 30.0, "paperback": 8.0},
     "devastation of baal": 40.0,
     "lost emperor":      35.0,
+    "blood angels omnibus 2" : {"paperback": 10.0},
 
     # -------------------------------------------------------------------------
     # Iron Warriors / Storm of Iron
     # -------------------------------------------------------------------------
     "storm of iron":  {"hardback": 45.0, "paperback": 15.0},
     "iron warrior":   35.0,
+    "iron warrior omnibus": {"paperback": 20.0},
 
     # -------------------------------------------------------------------------
     # Other Popular 40K
@@ -235,12 +248,12 @@ PRICE_GUIDE: dict[str, Entry] = {
     "hereticus":                  {"hardback": 25.0, "paperback": 8.0},
     "daemon world":               30.0,
     "helsreach":                  {"hardback": 40.0, "paperback": 12.0},
-    "the emperor's gift":         35.0,
+    "the emperor's gift":         {"hardback": 20.0, "paperback": 12.0},
     "priests of mars":            35.0,
     "lords of mars":              35.0,
     "gods of mars":               35.0,
     "mechanicus":                 30.0,
-    "belisarius cawl":            35.0,
+    "belisarius cawl":            {"hardback": 35.0, "paperback": 10.0},
     "ashes of prospero":          35.0,
     "lukas the trickster":        30.0,
     "valdor: birth of the imperium": 45.0,
@@ -249,11 +262,20 @@ PRICE_GUIDE: dict[str, Entry] = {
     "watchers of the throne":     40.0,
     "hand of darkness":           35.0,
     "eye of night":               35.0,
-    "assassinorum":               35.0,
+    "assassinorum":               {"hardback": 40.0, "paperback": 9.0},
     "kingsblade":                 30.0,
     "knightsblade":               30.0,
     "imperial knight":            30.0,
+    "the macharian crusade omnibus": {"paperback": 20.0},
+    "astra militarum legends": 20.0,
+    "hammer of the emperor": {"paperback": 10.0},
 
+    # -------------------------------------------------------------------------
+    # Fanius bile
+    # -------------------------------------------------------------------------
+    "primogenitor": {"paperback":15.0},
+    "clonelord":    {"paperback": 30.0},
+    "manflayer": {"paperback":30.0},
     # -------------------------------------------------------------------------
     # Age of Sigmar
     # -------------------------------------------------------------------------
@@ -289,9 +311,15 @@ PRICE_GUIDE: dict[str, Entry] = {
     "sword of justice":   28.0,
     "sword of vengeance": 28.0,
     "palace of the plague lord": 28.0,
+    "gotrek and felix first omnibus": {"paperback": 8.0},
+    "gotrek and felix second omnibus": {"paperback": 28.0},
+    "gotrek and felix third omnibus": {"paperback": 25.0},
+    "warhammer chronicles: the war of vengeance omnibus": {"paperback": 30.0},
 
     # -------------------------------------------------------------------------
     # Add your own entries below
     # -------------------------------------------------------------------------
-
+    "lords of silence": {"paperback": 20.0},
+    "broken city": {"paperback": 15.0},
+    "grotsnik: do mad doc": 15.0,
 }
