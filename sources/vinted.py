@@ -47,8 +47,12 @@ def _parse_price(raw: object) -> float | None:
         return None
 
 
-def fetch_vinted_listings() -> list[Listing]:
-    """Fetch fixed-price BL book listings from Vinted UK."""
+def fetch_vinted_listings(
+    search_terms: list[tuple[str, int]] | None = None,
+    category: str = "warhammer",
+) -> list[Listing]:
+    """Fetch fixed-price book listings from Vinted UK."""
+    terms = search_terms if search_terms is not None else config.VINTED_SEARCH_TERMS
     listings: list[Listing] = []
     seen_ids: set[str] = set()
 
@@ -74,7 +78,7 @@ def fetch_vinted_listings() -> list[Listing]:
             log.debug("Vinted: no CSRF token in cookies (read-only requests should still work)")
 
         # Step 3 — search each term
-        for term, limit in config.VINTED_SEARCH_TERMS:
+        for term, limit in terms:
             try:
                 resp = client.get(
                     _CATALOG_URL,
@@ -127,6 +131,7 @@ def fetch_vinted_listings() -> list[Listing]:
                             source="vinted",
                             condition=item.get("status"),
                             image_url=photo,
+                            category=category,
                         )
                     )
 

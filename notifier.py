@@ -100,7 +100,7 @@ def send_telegram_message(text: str, *, bot_token: str, chat_id: str) -> None:
 
 
 def send_bargain_alert(text: str) -> None:
-    """Send to the bargain alerts channel (daily buys)."""
+    """Send to the Warhammer bargain alerts channel (daily buys)."""
     send_telegram_message(text, bot_token=config.TELEGRAM_BOT_TOKEN, chat_id=config.TELEGRAM_CHAT_ID)
 
 
@@ -110,4 +110,47 @@ def send_digest_alert(text: str) -> None:
         text,
         bot_token=config.TELEGRAM_DIGEST_BOT_TOKEN,
         chat_id=config.TELEGRAM_DIGEST_CHAT_ID,
+    )
+
+
+def format_fantasy_bargains(bargains: list[Bargain]) -> str:
+    """Format fantasy/sci-fi bargains as plain text for Telegram."""
+    lines = [f"Fantasy Scout — {len(bargains)} bargain(s) found today\n"]
+
+    for i, b in enumerate(bargains, 1):
+        lines.append(
+            f"{i}. [{_label(b.listing.source)}] {b.listing.title}\n"
+            f"   £{b.listing.price_gbp:.2f} (market ~£{b.market_price:.2f})"
+            f" — {b.discount_pct:.0%} off\n"
+            f"   {b.listing.url}"
+        )
+
+    return "\n".join(lines)
+
+
+def format_fantasy_bundles(bundles: list[Listing]) -> str:
+    """Format fantasy/sci-fi bundle listings as plain text for manual review."""
+    lines = [f"Fantasy Scout — {len(bundles)} bundle(s) to review\n"]
+
+    for i, b in enumerate(bundles, 1):
+        lines.append(
+            f"{i}. [{_label(b.source)}] {b.title}\n"
+            f"   £{b.price_gbp:.2f}\n"
+            f"   {b.url}"
+        )
+
+    return "\n".join(lines)
+
+
+def send_fantasy_alert(text: str) -> None:
+    """Send to the fantasy & sci-fi bargain alerts channel.
+    No-ops silently if TELEGRAM_FANTASY_BOT_TOKEN / CHAT_ID are not configured.
+    """
+    if not config.TELEGRAM_FANTASY_BOT_TOKEN or not config.TELEGRAM_FANTASY_CHAT_ID:
+        log.debug("Fantasy Telegram bot not configured — skipping fantasy alert")
+        return
+    send_telegram_message(
+        text,
+        bot_token=config.TELEGRAM_FANTASY_BOT_TOKEN,
+        chat_id=config.TELEGRAM_FANTASY_CHAT_ID,
     )

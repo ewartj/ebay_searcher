@@ -10,8 +10,12 @@ from sources.ebay_api import BROWSE_BASE, get_app_token
 log = logging.getLogger(__name__)
 
 
-def fetch_ebay_listings() -> list[Listing]:
+def fetch_ebay_listings(
+    search_terms: list[tuple[str, int]] | None = None,
+    category: str = "warhammer",
+) -> list[Listing]:
     """Search eBay UK for BIN listings matching all configured search terms."""
+    terms = search_terms if search_terms is not None else config.SEARCH_TERMS
     listings: list[Listing] = []
     seen_ids: set[str] = set()
 
@@ -22,7 +26,7 @@ def fetch_ebay_listings() -> list[Listing]:
             "X-EBAY-C-MARKETPLACE-ID": "EBAY_GB",
         }
 
-        for term, limit in config.SEARCH_TERMS:
+        for term, limit in terms:
             try:
                 resp = client.get(
                     f"{BROWSE_BASE}/item_summary/search",
@@ -67,6 +71,7 @@ def fetch_ebay_listings() -> list[Listing]:
                             source="ebay",
                             condition=item.get("condition"),
                             image_url=item.get("image", {}).get("imageUrl"),
+                            category=category,
                         )
                     )
 

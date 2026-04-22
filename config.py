@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 
 from price_guide import PRICE_GUIDE  # noqa: F401 — re-exported for use across the app
+from price_guide_fantasy import FANTASY_PRICE_GUIDE  # noqa: F401 — re-exported for use across the app
 
 load_dotenv()
 
@@ -20,6 +21,10 @@ TELEGRAM_CHAT_ID: str = os.environ["TELEGRAM_CHAT_ID"]
 # --- Telegram — market research digest (weekly) ---
 TELEGRAM_DIGEST_BOT_TOKEN: str = os.environ["TELEGRAM_DIGEST_BOT_TOKEN"]
 TELEGRAM_DIGEST_CHAT_ID: str = os.environ["TELEGRAM_DIGEST_CHAT_ID"]
+
+# --- Telegram — fantasy & sci-fi bargain alerts ---
+TELEGRAM_FANTASY_BOT_TOKEN: str = os.environ.get("TELEGRAM_FANTASY_BOT_TOKEN", "")
+TELEGRAM_FANTASY_CHAT_ID: str = os.environ.get("TELEGRAM_FANTASY_CHAT_ID", "")
 
 # Flag a listing as a bargain if its price is at or below this fraction of market value.
 # 0.70 = 30% below market
@@ -76,6 +81,61 @@ VINTED_SEARCH_TERMS: list[tuple[str, int]] = [
     ("horus heresy books",        10),
 ]
 
+
+# Fantasy & sci-fi eBay search terms — routed to the fantasy Telegram bot.
+FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
+    # Joe Abercrombie
+    ("joe abercrombie hardback",            30),
+    ("first law hardback",                  30),
+    # Brandon Sanderson
+    ("brandon sanderson hardback",          30),
+    ("stormlight archive hardback",         30),
+    ("mistborn hardback",                   30),
+    # Dragonlance
+    ("dragonlance hardback",                20),
+    ("dragonlance chronicles hardback",     20),
+    # Patrick Rothfuss
+    ("name of the wind hardback",           20),
+    ("patrick rothfuss hardback",           20),
+    # Robin Hobb
+    ("robin hobb hardback",                 30),
+    ("farseer hardback",                    20),
+    # Steven Erikson / Malazan
+    ("steven erikson hardback",             20),
+    ("malazan hardback",                    20),
+    # Iain M. Banks / Culture
+    ("iain m banks hardback",               20),
+    ("culture series hardback",             20),
+    # Terry Pratchett & Neil Gaiman (signed/collectible)
+    ("terry pratchett signed hardback",     20),
+    ("neil gaiman signed hardback",         20),
+    # Peter F. Hamilton
+    ("peter f hamilton hardback",           20),
+    # Alastair Reynolds
+    ("alastair reynolds hardback",          20),
+    # Mark Lawrence
+    ("mark lawrence hardback",              20),
+    # Bundles
+    ("job lot fantasy hardback",            10),
+    ("job lot sci-fi hardback",             10),
+]
+
+# Fantasy & sci-fi Vinted search terms.
+FANTASY_VINTED_SEARCH_TERMS: list[tuple[str, int]] = [
+    ("joe abercrombie hardback",            30),
+    ("first law hardback",                  30),
+    ("brandon sanderson hardback",          30),
+    ("stormlight archive hardback",         30),
+    ("mistborn hardback",                   20),
+    ("dragonlance hardback",                20),
+    ("name of the wind hardback",           20),
+    ("robin hobb hardback",                 30),
+    ("iain m banks hardback",               20),
+    ("terry pratchett signed hardback",     20),
+    ("neil gaiman signed hardback",         20),
+    ("malazan hardback",                    20),
+    ("job lot fantasy hardback",            10),
+]
 
 # Weekly genre price tracking — fantasy/sci-fi authors and series.
 # (search_term, display_label) — run by scripts/genre_tracker.py

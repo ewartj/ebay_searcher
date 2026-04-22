@@ -15,6 +15,7 @@ class Listing:
     condition: str | None = None
     image_url: str | None = None
     is_bundle: bool = False
+    category: str = "warhammer"  # "warhammer" | "fantasy"
 
 
 @dataclass
