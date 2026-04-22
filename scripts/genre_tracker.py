@@ -29,7 +29,8 @@ logging.getLogger("httpcore").setLevel(logging.WARNING)
 log = logging.getLogger("genre_tracker")
 
 
-def main() -> None:
+def run_genre_tracker() -> int:
+    """Record this week's eBay median prices for tracked genres. Returns 0 on success."""
     init_db()
 
     terms = [term for term, _ in config.GENRE_SEARCH_TERMS]
@@ -54,12 +55,17 @@ def main() -> None:
     if skipped:
         log.info(f"  {skipped} term(s) skipped — fewer than 3 eBay listings found")
 
-    if snapshots:
-        record_genre_prices(snapshots)
+    if not snapshots:
+        log.error("Genre tracker: no snapshots recorded — all eBay fetches failed or returned too few listings")
+        return 1
 
-    log.info(
-        f"Genre tracker complete: {len(snapshots)}/{len(terms)} terms recorded"
-    )
+    record_genre_prices(snapshots)
+    log.info(f"Genre tracker complete: {len(snapshots)}/{len(terms)} terms recorded")
+    return 0
+
+
+def main() -> None:
+    sys.exit(run_genre_tracker())
 
 
 if __name__ == "__main__":

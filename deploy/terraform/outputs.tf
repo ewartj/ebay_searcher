@@ -17,3 +17,13 @@ output "lambda_function_name" {
   description = "Lambda function name (for manual invocations)"
   value       = aws_lambda_function.app.function_name
 }
+
+output "weekly_lambda_function_arn" {
+  description = "Weekly market research Lambda ARN"
+  value       = aws_lambda_function.weekly.arn
+}
+
+output "weekly_lambda_function_name" {
+  description = "Weekly market research Lambda name (for manual invocations)"
+  value       = aws_lambda_function.weekly.function_name
+}

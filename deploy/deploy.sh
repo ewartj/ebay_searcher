@@ -36,7 +36,7 @@ aws ecr get-login-password --region "$REGION" \
 
 echo "==> Building image..."
 docker build \
-  --platform linux/arm64 \
+  --platform linux/amd64 \
   -f deploy/Dockerfile.lambda \
   -t "${REPO_NAME}:latest" \
   .
@@ -45,11 +45,13 @@ echo "==> Tagging and pushing..."
 docker tag "${REPO_NAME}:latest" "${ECR_URI}:latest"
 docker push "${ECR_URI}:latest"
 
-echo "==> Updating Lambda function..."
-aws lambda update-function-code \
-  --function-name "$FUNCTION_NAME" \
-  --image-uri "${ECR_URI}:latest" \
-  --region "$REGION" \
-  --output text --query 'FunctionArn'
+echo "==> Updating Lambda functions..."
+for fn in "warhammer-scout" "warhammer-scout-weekly" "warhammer-scout-alerts"; do
+  aws lambda update-function-code \
+    --function-name "$fn" \
+    --image-uri "${ECR_URI}:latest" \
+    --region "$REGION" \
+    --output text --query 'FunctionArn'
+done
 
-echo "==> Done. Lambda updated."
+echo "==> Done. All Lambda functions updated."

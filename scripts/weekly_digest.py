@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 import anthropic
 
 import config
-from db import _DB_PATH, get_genre_trends, init_db
+from db import get_genre_trends, init_db
 from notifier import send_digest_alert
 from sources.reddit import fetch_signals
 
@@ -97,7 +97,6 @@ def _generate_digest(trends: list[dict], signals: list[dict]) -> str:
         return "(No AI summary available this week — check signals below)"
     digest = msg.content[0].text.strip()
 
-    # Append the 5 most recent signal links so they're clickable in Telegram
     if signals:
         digest += "\n\nNotable links:"
         for s in signals[:5]:
@@ -106,20 +105,13 @@ def _generate_digest(trends: list[dict], signals: list[dict]) -> str:
     return digest
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate and send weekly market digest")
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Print digest to console instead of sending to Telegram",
-    )
-    args = parser.parse_args()
-
+def run_weekly_digest(dry_run: bool = False) -> int:
+    """Generate and send the weekly market digest. Returns 0 on success."""
     init_db()
 
-    if not _DB_PATH.exists():
+    if not Path(config.DB_PATH).exists():
         log.error("No price history database found. Run main.py and genre_tracker.py first.")
-        sys.exit(1)
+        return 1
 
     log.info("Fetching genre price trends...")
     trends = get_genre_trends(days=28)
@@ -134,14 +126,13 @@ def main() -> None:
             "Nothing to report yet. Run genre_tracker.py for 2+ weeks "
             "to build trend data."
         )
-        return
+        return 0
 
     log.info("Generating digest with Claude...")
     digest = _generate_digest(trends, signals)
-
     message = f"Warhammer Scout — Weekly Market Digest\n\n{digest}"
 
-    if args.dry_run:
+    if dry_run:
         print("\n" + "=" * 60)
         print(message)
         print("=" * 60)
@@ -149,6 +140,19 @@ def main() -> None:
     else:
         send_digest_alert(message)
         log.info("Weekly digest sent to Telegram")
+
+    return 0
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Generate and send weekly market digest")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print digest to console instead of sending to Telegram",
+    )
+    args = parser.parse_args()
+    sys.exit(run_weekly_digest(dry_run=args.dry_run))
 
 
 if __name__ == "__main__":

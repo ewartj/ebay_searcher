@@ -20,3 +20,6 @@ telegram_fantasy_chat_id   = ""
 
 # Daily at 07:00 UTC — adjust to taste
 schedule_expression = "cron(0 7 * * ? *)"
+
+# Weekly on Sunday at 08:00 UTC (genre tracker + digest)
+weekly_schedule_expression = "cron(0 8 ? * SUN *)"

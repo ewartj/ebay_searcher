@@ -72,9 +72,15 @@ variable "telegram_fantasy_chat_id" {
 }
 
 variable "schedule_expression" {
-  description = "EventBridge cron expression for when the Lambda runs (UTC)"
+  description = "EventBridge cron expression for the daily scan (UTC)"
   type        = string
   default     = "cron(0 7 * * ? *)"
+}
+
+variable "weekly_schedule_expression" {
+  description = "EventBridge cron expression for the weekly market research job (UTC)"
+  type        = string
+  default     = "cron(0 8 ? * SUN *)"
 }
 
 variable "lambda_timeout" {
