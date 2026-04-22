@@ -15,16 +15,16 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
+import config
 from models import Bargain, Listing
 
 log = logging.getLogger(__name__)
 
-_DB_PATH = Path(__file__).parent / "data" / "prices.db"
-
 
 def _connect() -> sqlite3.Connection:
-    _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(_DB_PATH)
+    path = Path(config.DB_PATH)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(path)
     conn.row_factory = sqlite3.Row
     return conn
 

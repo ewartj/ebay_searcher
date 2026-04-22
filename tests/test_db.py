@@ -5,15 +5,16 @@ from unittest.mock import patch
 
 import pytest
 
+import config
 import db
 from db import get_genre_trends, init_db, record_genre_prices
 
 
 @pytest.fixture
 def temp_db(tmp_path):
-    """Patch _DB_PATH to a temp file and initialise the schema."""
-    db_path = tmp_path / "test_prices.db"
-    with patch.object(db, "_DB_PATH", db_path):
+    """Point DB_PATH at a temp file and initialise the schema."""
+    db_path = str(tmp_path / "test_prices.db")
+    with patch.object(config, "DB_PATH", db_path):
         init_db()
         yield db_path
 
@@ -24,7 +25,7 @@ def _snapshot(term: str, label: str, median: float, count: int = 10) -> tuple:
 
 class TestRecordGenrePrices:
     def test_stores_snapshots(self, temp_db):
-        with patch.object(db, "_DB_PATH", temp_db):
+        with patch.object(config, "DB_PATH", temp_db):
             record_genre_prices([_snapshot("joe abercrombie hardback", "Joe Abercrombie", 25.0)])
             import sqlite3
             conn = sqlite3.connect(temp_db)
@@ -33,7 +34,7 @@ class TestRecordGenrePrices:
         assert len(rows) == 1
 
     def test_stores_correct_values(self, temp_db):
-        with patch.object(db, "_DB_PATH", temp_db):
+        with patch.object(config, "DB_PATH", temp_db):
             record_genre_prices([_snapshot("joe abercrombie hardback", "Joe Abercrombie", 25.0, count=15)])
             import sqlite3
             conn = sqlite3.connect(temp_db)
@@ -44,7 +45,7 @@ class TestRecordGenrePrices:
         assert row[5] == 15                 # listing_count
 
     def test_stores_multiple_snapshots(self, temp_db):
-        with patch.object(db, "_DB_PATH", temp_db):
+        with patch.object(config, "DB_PATH", temp_db):
             snapshots = [
                 _snapshot("joe abercrombie hardback", "Joe Abercrombie", 25.0),
                 _snapshot("brandon sanderson hardback", "Brandon Sanderson", 35.0),
@@ -70,14 +71,14 @@ class TestGetGenreTrends:
         conn.close()
 
     def test_returns_empty_with_no_data(self, temp_db):
-        with patch.object(db, "_DB_PATH", temp_db):
+        with patch.object(config, "DB_PATH", temp_db):
             trends = get_genre_trends()
         assert trends == []
 
     def test_returns_empty_with_only_one_snapshot(self, temp_db):
         now = datetime.now(timezone.utc).isoformat()
         self._insert_snapshot(temp_db, "Joe Abercrombie", 25.0, now)
-        with patch.object(db, "_DB_PATH", temp_db):
+        with patch.object(config, "DB_PATH", temp_db):
             trends = get_genre_trends()
         assert trends == []
 
@@ -86,7 +87,7 @@ class TestGetGenreTrends:
         week_ago = now - timedelta(days=8)
         self._insert_snapshot(temp_db, "Joe Abercrombie", 20.0, week_ago.isoformat())
         self._insert_snapshot(temp_db, "Joe Abercrombie", 25.0, now.isoformat())
-        with patch.object(db, "_DB_PATH", temp_db):
+        with patch.object(config, "DB_PATH", temp_db):
             trends = get_genre_trends()
         assert len(trends) == 1
         assert trends[0]["label"] == "Joe Abercrombie"
@@ -99,7 +100,7 @@ class TestGetGenreTrends:
         week_ago = now - timedelta(days=8)
         self._insert_snapshot(temp_db, "Brandon Sanderson", 40.0, week_ago.isoformat())
         self._insert_snapshot(temp_db, "Brandon Sanderson", 30.0, now.isoformat())
-        with patch.object(db, "_DB_PATH", temp_db):
+        with patch.object(config, "DB_PATH", temp_db):
             trends = get_genre_trends()
         assert len(trends) == 1
         assert trends[0]["change_pct"] == pytest.approx(-0.25, abs=0.001)
@@ -113,7 +114,7 @@ class TestGetGenreTrends:
         # Sanderson: -50% change (larger absolute)
         self._insert_snapshot(temp_db, "Brandon Sanderson", 40.0, week_ago.isoformat())
         self._insert_snapshot(temp_db, "Brandon Sanderson", 20.0, now.isoformat())
-        with patch.object(db, "_DB_PATH", temp_db):
+        with patch.object(config, "DB_PATH", temp_db):
             trends = get_genre_trends()
         assert trends[0]["label"] == "Brandon Sanderson"
         assert trends[1]["label"] == "Joe Abercrombie"
@@ -123,7 +124,7 @@ class TestGetGenreTrends:
         week_ago = now - timedelta(days=8)
         self._insert_snapshot(temp_db, "Joe Abercrombie", 20.0, week_ago.isoformat())
         self._insert_snapshot(temp_db, "Joe Abercrombie", 25.0, now.isoformat())
-        with patch.object(db, "_DB_PATH", temp_db):
+        with patch.object(config, "DB_PATH", temp_db):
             trends = get_genre_trends()
         assert "listing_count" in trends[0]
         assert trends[0]["listing_count"] == 10

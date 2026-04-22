@@ -1,5 +1,6 @@
 """Configuration — credentials, thresholds, and search terms."""
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 from price_guide import PRICE_GUIDE  # noqa: F401 — re-exported for use across the app
@@ -25,6 +26,25 @@ TELEGRAM_DIGEST_CHAT_ID: str = os.environ["TELEGRAM_DIGEST_CHAT_ID"]
 # --- Telegram — fantasy & sci-fi bargain alerts ---
 TELEGRAM_FANTASY_BOT_TOKEN: str = os.environ.get("TELEGRAM_FANTASY_BOT_TOKEN", "")
 TELEGRAM_FANTASY_CHAT_ID: str = os.environ.get("TELEGRAM_FANTASY_CHAT_ID", "")
+
+# --- Lambda / deployment ---
+# True when running inside AWS Lambda
+IS_LAMBDA: bool = bool(os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+
+# SQLite database path.
+# Defaults to /tmp/prices.db in Lambda (only writable location),
+# or data/prices.db next to this file for local runs.
+_default_db_path = (
+    "/tmp/prices.db"
+    if IS_LAMBDA
+    else str(Path(__file__).parent / "data" / "prices.db")
+)
+DB_PATH: str = os.environ.get("DB_PATH", _default_db_path)
+
+# S3 bucket and key for persisting the SQLite DB between Lambda invocations.
+# Leave S3_BUCKET empty when running locally.
+S3_BUCKET: str = os.environ.get("S3_BUCKET", "")
+S3_DB_KEY: str = os.environ.get("S3_DB_KEY", "warhammer-scout/prices.db")
 
 # Flag a listing as a bargain if its price is at or below this fraction of market value.
 # 0.70 = 30% below market
