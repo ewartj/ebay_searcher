@@ -31,17 +31,17 @@ class TestLookupPriceGuide:
         assert _lookup_price_guide("Titanicus PB") is None
 
     def test_dict_entry_hardback(self):
-        # "horus rising": {"hardback": 30.0, "paperback": 8.0}
-        assert _lookup_price_guide("Horus Rising Hardback") == 30.0
+        # "horus rising": {"hardback": 20.0, "paperback": 5.0}
+        assert _lookup_price_guide("Horus Rising Hardback") == 20.0
 
     def test_dict_entry_paperback(self):
-        assert _lookup_price_guide("Horus Rising Paperback") == 8.0
+        assert _lookup_price_guide("Horus Rising Paperback") == 5.0
 
     def test_no_match_returns_none(self):
         assert _lookup_price_guide("Harry Potter and the Philosopher's Stone") is None
 
     def test_case_insensitive(self):
-        assert _lookup_price_guide("HORUS RISING HARDBACK") == 30.0
+        assert _lookup_price_guide("HORUS RISING HARDBACK") == 20.0
 
     def test_best_price_wins_when_multiple_keys_match(self):
         # "saturnine": {"hardback": 55.0, ...} — only one key should match, check value
@@ -119,9 +119,11 @@ class TestExcludeRe:
 
     def test_excluded_listing_not_returned_as_bargain(self):
         listing = _listing("Space Marines Codex 9th Edition", 5.0)
-        bargains, bundles = find_bargains([listing])
-        assert bargains == []
-        assert bundles == []
+        wh_bargains, wh_bundles, fa_bargains, fa_bundles = find_bargains([listing])
+        assert wh_bargains == []
+        assert wh_bundles == []
+        assert fa_bargains == []
+        assert fa_bundles == []
 
 
 class TestBundleRe:
@@ -257,53 +259,54 @@ def _listing(title: str, price: float, source: str = "ebay") -> Listing:
 
 class TestFindBargains:
     def test_price_guide_bargain_detected(self):
-        # "horus rising" hardback: £30; 30% below = ≤ £21; £15 qualifies
-        listing = _listing("Horus Rising Hardback", 15.0)
-        bargains, bundles = find_bargains([listing])
-        assert len(bargains) == 1
-        assert bargains[0].discount_pct == pytest.approx(0.5)
-        assert bargains[0].price_source == "price_guide"
+        # "horus rising" hardback: £20; must be ≤70% (≤£14) and profit ≥£10 (≤£10)
+        listing = _listing("Horus Rising Hardback", 8.0)
+        wh_bargains, _, _, _ = find_bargains([listing])
+        assert len(wh_bargains) == 1
+        assert wh_bargains[0].discount_pct == pytest.approx(0.6)
+        assert wh_bargains[0].price_source == "price_guide"
 
     def test_price_guide_not_a_bargain(self):
         # £25 / £30 = 83% of market — above 70% threshold
         listing = _listing("Horus Rising Hardback", 25.0)
-        bargains, _ = find_bargains([listing])
-        assert bargains == []
+        wh_bargains, _, _, _ = find_bargains([listing])
+        assert wh_bargains == []
 
     def test_below_min_profit_not_a_bargain(self):
         # "deus encarmine" hardback: £30; £22 = 73% of £30 → passes discount threshold
         # but profit = £30 - £22 = £8 < MIN_PROFIT (£10) → not flagged
         listing = _listing("Deus Encarmine Hardback", 22.0)
-        bargains, _ = find_bargains([listing])
-        assert bargains == []
+        wh_bargains, _, _, _ = find_bargains([listing])
+        assert wh_bargains == []
 
     def test_paperback_uses_paperback_price(self):
         # "eisenhorn" paperback: £25; £12 = 48% of £25, profit £13 → bargain
         listing = _listing("Eisenhorn Omnibus Paperback", 12.0)
-        bargains, _ = find_bargains([listing])
-        assert len(bargains) == 1
-        assert bargains[0].market_price == 25.0
+        wh_bargains, _, _, _ = find_bargains([listing])
+        assert len(wh_bargains) == 1
+        assert wh_bargains[0].market_price == 25.0
 
     def test_warhammer_bundle_flagged_for_review(self):
         listing = _listing("Warhammer Black Library bundle x5", 20.0)
-        bargains, bundles = find_bargains([listing])
-        assert bundles == [listing]
-        assert bargains == []
+        wh_bargains, wh_bundles, _, _ = find_bargains([listing])
+        assert wh_bundles == [listing]
+        assert wh_bargains == []
         assert listing.is_bundle is True
 
     def test_non_warhammer_bundle_not_flagged(self):
         listing = _listing("Xbox games bundle x5", 20.0)
-        _, bundles = find_bargains([listing])
-        assert bundles == []
+        _, wh_bundles, _, fa_bundles = find_bargains([listing])
+        assert wh_bundles == []
+        assert fa_bundles == []
 
     def test_bargains_sorted_by_discount_descending(self):
         listings = [
-            _listing("Horus Rising Hardback", 20.0),  # 20/30 = 33% off
+            _listing("Horus Rising Hardback", 8.0),   # 8/20 = 60% off
             _listing("Saturnine Hardback", 10.0),      # 10/55 = 82% off
         ]
-        bargains, _ = find_bargains(listings)
-        assert len(bargains) == 2
-        assert bargains[0].listing.title == "Saturnine Hardback"
+        wh_bargains, _, _, _ = find_bargains(listings)
+        assert len(wh_bargains) == 2
+        assert wh_bargains[0].listing.title == "Saturnine Hardback"
 
     def test_claude_estimate_used_for_unknown_title(self):
         call_count = [0]
@@ -322,9 +325,9 @@ class TestFindBargains:
 
         listing = _listing("Rare Collector Edition Hardback", 40.0)
         with patch("pricing.fetch_market_prices", return_value={}):
-            bargains, _ = find_bargains([listing], claude_client=mock)
-        assert len(bargains) == 1
-        assert bargains[0].price_source == "claude_estimate"
+            wh_bargains, _, _, _ = find_bargains([listing], claude_client=mock)
+        assert len(wh_bargains) == 1
+        assert wh_bargains[0].price_source == "claude_estimate"
 
     def test_ebay_active_price_used_when_available(self):
         mock = MagicMock()
@@ -334,10 +337,10 @@ class TestFindBargains:
 
         listing = _listing("Rare Collector Edition Hardback", 20.0)
         with patch("pricing.fetch_market_prices", return_value={"Rare Collector Edition Hardback": 60.0}):
-            bargains, _ = find_bargains([listing], claude_client=mock)
-        assert len(bargains) == 1
-        assert bargains[0].price_source == "ebay_active"
-        assert bargains[0].market_price == 60.0
+            wh_bargains, _, _, _ = find_bargains([listing], claude_client=mock)
+        assert len(wh_bargains) == 1
+        assert wh_bargains[0].price_source == "ebay_active"
+        assert wh_bargains[0].market_price == 60.0
 
     def test_ebay_active_no_http_calls_in_tests(self):
         # Verify fetch_market_prices is always patched — real HTTP would raise in CI
@@ -351,15 +354,33 @@ class TestFindBargains:
         mock_fetch.assert_called_once()
 
     def test_empty_listings_returns_empty(self):
-        bargains, bundles = find_bargains([])
-        assert bargains == []
-        assert bundles == []
+        wh_bargains, wh_bundles, fa_bargains, fa_bundles = find_bargains([])
+        assert wh_bargains == []
+        assert wh_bundles == []
+        assert fa_bargains == []
+        assert fa_bundles == []
 
-    def test_unknown_title_skipped_when_no_claude_client_and_not_in_guide(self):
-        # Title not in price guide; no mock Claude — uses global _client but filter
-        # returns empty (mock not set up) so title is skipped, not a bargain
+    def test_unknown_title_skipped_when_not_in_guide(self):
         listing = _listing("Completely Unknown Fantasy Novel", 5.0)
-        # We pass a client that returns [] from filter so nothing gets priced
         mock = _mock_client("[]")
-        bargains, _ = find_bargains([listing], claude_client=mock)
-        assert bargains == []
+        wh_bargains, _, _, _ = find_bargains([listing], claude_client=mock)
+        assert wh_bargains == []
+
+    def test_fantasy_listing_routed_to_fantasy_results(self):
+        from models import Listing as L
+        listing = L(
+            title="The Blade Itself Hardback", price_gbp=10.0,
+            url="https://test.example", source="ebay", category="fantasy",
+        )
+        _, _, fa_bargains, _ = find_bargains([listing])
+        assert len(fa_bargains) == 1
+        assert fa_bargains[0].price_source == "price_guide"
+
+    def test_fantasy_bundle_flagged_without_warhammer_re(self):
+        from models import Listing as L
+        listing = L(
+            title="job lot fantasy hardback x5", price_gbp=20.0,
+            url="https://test.example", source="ebay", category="fantasy",
+        )
+        _, _, _, fa_bundles = find_bargains([listing])
+        assert fa_bundles == [listing]
