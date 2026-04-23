@@ -35,7 +35,7 @@ def lambda_handler(event: dict, context: object) -> dict:
         log.info("Downloaded DB from s3://%s/%s", config.S3_BUCKET, config.S3_DB_KEY)
     except ClientError as e:
         code = e.response["Error"]["Code"]
-        if code == "NoSuchKey":
+        if code in ("NoSuchKey", "404"):
             log.info("No existing DB on S3 — starting fresh")
         else:
             log.error("Failed to download DB from S3: %s", e)

@@ -16,6 +16,8 @@ _CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
 
 def lambda_handler(event: dict, context: object) -> dict:
+    failed = False
+
     for record in event.get("Records", []):
         try:
             message = json.loads(record["Sns"]["Message"])
@@ -38,5 +40,8 @@ def lambda_handler(event: dict, context: object) -> dict:
             ).raise_for_status()
         except httpx.HTTPError as e:
             log.error("Failed to send Telegram alert: %s", e)
+            failed = True
 
+    if failed:
+        return {"statusCode": 500, "body": "Telegram delivery failed"}
     return {"statusCode": 200}

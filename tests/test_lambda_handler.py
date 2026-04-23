@@ -28,9 +28,10 @@ class TestLambdaHandlerS3:
         assert result["statusCode"] == 500
         assert "S3_BUCKET" in result["body"]
 
-    def test_first_run_nosuchkey_proceeds_and_uploads(self):
+    @pytest.mark.parametrize("code", ["NoSuchKey", "404"])
+    def test_first_run_missing_object_proceeds_and_uploads(self, code):
         s3 = MagicMock()
-        s3.download_file.side_effect = _s3_error("NoSuchKey")
+        s3.download_file.side_effect = _s3_error(code)
         with patch.object(config, "S3_BUCKET", "my-bucket"), \
              patch("boto3.client", return_value=s3), \
              patch.object(lambda_handler, "run_scan", return_value=0):
