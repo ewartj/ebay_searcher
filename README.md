@@ -142,8 +142,8 @@ Only run `terraform apply` again if you change infrastructure (schedules, memory
 
 **CloudWatch Logs:**
 ```bash
-aws logs tail /aws/lambda/warhammer-scout --region eu-west-2 --follow
-aws logs tail /aws/lambda/warhammer-scout-weekly --region eu-west-2 --follow
+aws logs tail /aws/lambda/warhammer-scout --region X --follow
+aws logs tail /aws/lambda/warhammer-scout-weekly --region X--follow
 ```
 
 **CloudWatch Alarms** fire a Telegram message to the Warhammer bot if:
