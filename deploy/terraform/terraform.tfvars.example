@@ -1,0 +1,25 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# Never commit terraform.tfvars to git — it contains secrets.
+
+region      = "eu-west-2"
+bucket_name = "warhammer-scout-db-YOUR_ACCOUNT_ID"  # must be globally unique
+s3_db_key   = "warhammer-scout/prices.db"
+
+ebay_client_id     = "your-ebay-client-id"
+ebay_client_secret = "your-ebay-client-secret"
+anthropic_api_key  = "sk-ant-..."
+
+telegram_bot_token        = "123456789:ABCdefGHI..."
+telegram_chat_id          = "your-chat-id"
+telegram_digest_bot_token = "123456789:ABCdefGHI..."
+telegram_digest_chat_id   = "your-chat-id"
+
+# Optional — leave as empty strings to disable fantasy alerts
+telegram_fantasy_bot_token = ""
+telegram_fantasy_chat_id   = ""
+
+# Daily at 07:00 UTC — adjust to taste
+schedule_expression = "cron(0 7 * * ? *)"
+
+# Weekly on Sunday at 08:00 UTC (genre tracker + digest)
+weekly_schedule_expression = "cron(0 8 ? * SUN *)"

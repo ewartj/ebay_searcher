@@ -4,7 +4,7 @@ Warhammer Scout — daily eBay + Vinted bargain finder for Black Library books.
 
 Run manually:   python main.py
 Run dry-run:    python main.py --dry-run
-Run daily:      cron / systemd timer (see README)
+Run daily:      cron / systemd timer, or AWS Lambda (see deploy/)
 """
 import argparse
 import logging
@@ -37,41 +37,39 @@ from sources.vinted import fetch_vinted_listings
 _LOG_FILE = Path(__file__).parent / "data" / "warhammer_scout.log"
 
 
-def _setup_logging() -> None:
+def setup_logging() -> None:
+    """Configure logging. In Lambda, only a StreamHandler is added (CloudWatch
+    captures stdout). Locally, a rotating file handler is also attached."""
     fmt = logging.Formatter(
         "%(asctime)s %(levelname)s %(name)s — %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # Console
-    console = logging.StreamHandler()
-    console.setFormatter(fmt)
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
 
-    # Rotating file — 1 MB per file, keep last 7
-    _LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    file_handler = logging.handlers.RotatingFileHandler(
-        _LOG_FILE, maxBytes=1_000_000, backupCount=7, encoding="utf-8"
-    )
-    file_handler.setFormatter(fmt)
+    if not config.IS_LAMBDA:
+        _LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.handlers.RotatingFileHandler(
+            _LOG_FILE, maxBytes=1_000_000, backupCount=7, encoding="utf-8"
+        ))
 
-    logging.basicConfig(level=logging.INFO, handlers=[console, file_handler])
+    for h in handlers:
+        h.setFormatter(fmt)
+
+    logging.basicConfig(level=logging.INFO, handlers=handlers)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Warhammer Scout bargain finder")
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Fetch and price listings but skip Telegram notifications and DB recording",
-    )
-    args = parser.parse_args()
-
-    _setup_logging()
+def run_scan(dry_run: bool = False) -> int:
+    """
+    Execute one full scan: fetch → price → notify → record.
+    Returns 0 on success, 1 on error.
+    Called by main() for CLI use and by lambda_handler for Lambda invocations.
+    """
     log = logging.getLogger("warhammer_scout")
 
-    if args.dry_run:
+    if dry_run:
         log.info("=== Warhammer Scout scan starting (DRY RUN — no notifications) ===")
     else:
         try:
@@ -127,7 +125,7 @@ def main() -> int:
         f"Fantasy — bargains: {len(fa_bargains)}, bundles: {len(fa_bundles)}"
     )
 
-    if args.dry_run:
+    if dry_run:
         if wh_bargains:
             log.info("Dry-run Warhammer bargains:\n" + format_bargains(wh_bargains))
         if wh_bundles:
@@ -206,6 +204,18 @@ def main() -> int:
 
     log.info("=== Warhammer Scout scan complete ===")
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Warhammer Scout bargain finder")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Fetch and price listings but skip Telegram notifications and DB recording",
+    )
+    args = parser.parse_args()
+    setup_logging()
+    return run_scan(dry_run=args.dry_run)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,20 @@
+# Secrets — never bundle into the image
+.env
+*.env
+deploy/terraform/terraform.tfvars
+deploy/terraform/*.tfvars
+
+# Git history (large and irrelevant inside the container)
+.git
+
+# Local runtime data
+data/
+
+# Python bytecode and caches
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

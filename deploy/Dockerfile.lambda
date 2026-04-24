@@ -1,0 +1,11 @@
+FROM public.ecr.aws/lambda/python:3.13
+
+# Install dependencies declared in pyproject.toml [project.dependencies]
+# (boto3 is pre-installed in the Lambda runtime)
+COPY pyproject.toml ${LAMBDA_TASK_ROOT}/
+RUN pip install --no-cache-dir "${LAMBDA_TASK_ROOT}"
+
+# Copy application code (after dep install to exploit layer caching)
+COPY . ${LAMBDA_TASK_ROOT}
+
+CMD ["lambda_handler.lambda_handler"]
