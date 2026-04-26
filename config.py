@@ -60,7 +60,9 @@ ALERT_DEDUP_DAYS: int = 30
 # Add terms here if new junk categories start appearing in search results.
 EXCLUDE_TITLE_KEYWORDS: list[str] = [
     "codex", "codices", "rulebook", "rule book",
-    "art book", "artbook", "painting guide", "painting manual",
+    "art book", "artbook", "art print", "a3 art", "a4 art", "a2 art",
+    "poster", "print set",
+    "painting guide", "painting manual",
     "warhammer legends", "army guide", "starter set", "starter box",
     "index astartes",
 ]
@@ -86,8 +88,11 @@ SEARCH_TERMS: list[tuple[str, int]] = [
     ("horus heresy hardback",                50),
     ("black library signed",                 50),
     ("warhammer black library omnibus hardback", 50),
-    ("job lot black library",                10),
-    ("horus heresy books",                   10),
+    ("job lot black library",                20),
+    ("horus heresy books",                   20),
+    ("horus heresy bundle",                  20),
+    ("black library bundle",                 20),
+    ("warhammer book bundle",                20),
 ]
 
 # Search terms used on Vinted — (term, max_results) pairs.
