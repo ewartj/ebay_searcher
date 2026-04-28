@@ -35,7 +35,8 @@ class TestLambdaWeeklyHandlerS3:
         with patch.object(config, "S3_BUCKET", "my-bucket"), \
              patch("boto3.client", return_value=s3), \
              patch.object(lambda_weekly_handler, "run_genre_tracker", return_value=0), \
-             patch.object(lambda_weekly_handler, "run_weekly_digest", return_value=0):
+             patch.object(lambda_weekly_handler, "run_weekly_digest", return_value=0), \
+             patch.object(lambda_weekly_handler, "run_market_scout", return_value=0):
             result = lambda_weekly_handler.lambda_handler({}, None)
         assert result["statusCode"] == 200
         s3.upload_file.assert_called_once()
@@ -56,7 +57,8 @@ class TestLambdaWeeklyHandlerS3:
         with patch.object(config, "S3_BUCKET", "my-bucket"), \
              patch("boto3.client", return_value=s3), \
              patch.object(lambda_weekly_handler, "run_genre_tracker", return_value=1), \
-             patch.object(lambda_weekly_handler, "run_weekly_digest", return_value=0):
+             patch.object(lambda_weekly_handler, "run_weekly_digest", return_value=0), \
+             patch.object(lambda_weekly_handler, "run_market_scout", return_value=0):
             result = lambda_weekly_handler.lambda_handler({}, None)
         assert result["statusCode"] == 500
         s3.upload_file.assert_not_called()
@@ -66,7 +68,8 @@ class TestLambdaWeeklyHandlerS3:
         with patch.object(config, "S3_BUCKET", "my-bucket"), \
              patch("boto3.client", return_value=s3), \
              patch.object(lambda_weekly_handler, "run_genre_tracker", return_value=0), \
-             patch.object(lambda_weekly_handler, "run_weekly_digest", return_value=1):
+             patch.object(lambda_weekly_handler, "run_weekly_digest", return_value=1), \
+             patch.object(lambda_weekly_handler, "run_market_scout", return_value=0):
             result = lambda_weekly_handler.lambda_handler({}, None)
         assert result["statusCode"] == 500
         s3.upload_file.assert_not_called()
@@ -76,7 +79,19 @@ class TestLambdaWeeklyHandlerS3:
         with patch.object(config, "S3_BUCKET", "my-bucket"), \
              patch("boto3.client", return_value=s3), \
              patch.object(lambda_weekly_handler, "run_genre_tracker", return_value=0), \
-             patch.object(lambda_weekly_handler, "run_weekly_digest", return_value=0):
+             patch.object(lambda_weekly_handler, "run_weekly_digest", return_value=0), \
+             patch.object(lambda_weekly_handler, "run_market_scout", return_value=0):
+            result = lambda_weekly_handler.lambda_handler({}, None)
+        assert result["statusCode"] == 200
+        s3.upload_file.assert_called_once()
+
+    def test_scout_failure_still_uploads_and_returns_200(self):
+        s3 = MagicMock()
+        with patch.object(config, "S3_BUCKET", "my-bucket"), \
+             patch("boto3.client", return_value=s3), \
+             patch.object(lambda_weekly_handler, "run_genre_tracker", return_value=0), \
+             patch.object(lambda_weekly_handler, "run_weekly_digest", return_value=0), \
+             patch.object(lambda_weekly_handler, "run_market_scout", return_value=1):
             result = lambda_weekly_handler.lambda_handler({}, None)
         assert result["statusCode"] == 200
         s3.upload_file.assert_called_once()
@@ -87,7 +102,8 @@ class TestLambdaWeeklyHandlerS3:
         with patch.object(config, "S3_BUCKET", "my-bucket"), \
              patch("boto3.client", return_value=s3), \
              patch.object(lambda_weekly_handler, "run_genre_tracker", return_value=0), \
-             patch.object(lambda_weekly_handler, "run_weekly_digest", return_value=0):
+             patch.object(lambda_weekly_handler, "run_weekly_digest", return_value=0), \
+             patch.object(lambda_weekly_handler, "run_market_scout", return_value=0):
             result = lambda_weekly_handler.lambda_handler({}, None)
         assert result["statusCode"] == 500
         assert result["body"] == "S3 upload failed"

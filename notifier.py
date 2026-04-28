@@ -92,7 +92,11 @@ def send_telegram_message(text: str, *, bot_token: str, chat_id: str) -> None:
             else:
                 log.info("Telegram message sent successfully")
         except httpx.HTTPStatusError as e:
-            log.error(f"Telegram notification failed: HTTP {e.response.status_code}")
+            masked = f"...{chat_id[-4:]}" if len(chat_id) > 4 else "****"
+            log.error(
+                f"Telegram notification failed: HTTP {e.response.status_code} — "
+                f"{e.response.text} (chat_id={masked})"
+            )
             return
         except httpx.HTTPError:
             log.error("Telegram notification failed: connection error")

@@ -190,6 +190,84 @@ GENRE_SEARCH_TERMS: list[tuple[str, str]] = [
     ("name of the wind hardback",         "Name of the Wind"),
 ]
 
+# Candidate niches probed weekly by scripts/market_scout.py.
+# Add any niche you're curious about — the scout scores each by price variance
+# and liquidity, then Claude surfaces the best opportunities.
+# (search_term, display_label)
+NICHE_SCOUT_TERMS: list[tuple[str, str]] = [
+    # Small-press limited editions (horror / SF)
+    ("subterranean press horror hardback",      "Subterranean Press Horror"),
+    ("cemetery dance signed hardback",          "Cemetery Dance Signed"),
+    ("ps publishing signed hardback",           "PS Publishing Signed"),
+    ("tor signed hardback limited edition",     "Tor Signed Limited"),
+
+    # UK signed-edition specialists
+    ("goldsboro books signed hardback",         "Goldsboro Signed"),
+    ("forbidden planet exclusive hardback",     "Forbidden Planet Exclusive"),
+
+    # Leather-bound collectibles
+    ("easton press leather bound hardback",     "Easton Press Leather"),
+    ("franklin library leather hardback",       "Franklin Library"),
+
+    # Vintage UK SF / horror anthologies
+    ("gollancz sf masterworks hardback",        "Gollancz SF Masterworks"),
+    ("pan horror anthology vintage",            "Pan Horror Vintage"),
+    ("fontana horror anthology vintage",        "Fontana Horror Vintage"),
+    ("victor gollancz first edition hardback",  "Gollancz First Edition"),
+
+    # Horror authors (not in daily/weekly scans)
+    ("stephen king limited edition hardback",   "Stephen King Limited"),
+    ("clive barker signed hardback",            "Clive Barker Signed"),
+    ("ramsey campbell signed hardback",         "Ramsey Campbell Signed"),
+    ("james herbert hardback signed",           "James Herbert Signed"),
+
+    # Classic SF authors not yet tracked
+    ("isaac asimov hardback foundation",        "Asimov Foundation Hardback"),
+    ("arthur c clarke hardback signed",         "Arthur C. Clarke Signed"),
+    ("philip k dick hardback",                  "Philip K. Dick Hardback"),
+    ("michael moorcock hardback elric",         "Moorcock / Elric Hardback"),
+    ("david gemmell hardback signed",           "David Gemmell Signed"),
+    ("roger zelazny hardback amber",            "Zelazny / Amber Hardback"),
+
+    # Popular fantasy authors not in FANTASY_SEARCH_TERMS
+    ("raymond feist hardback riftwar",          "Feist / Riftwar Hardback"),
+    ("david eddings hardback belgariad",        "Eddings / Belgariad Hardback"),
+    ("anne mccaffrey hardback dragonriders",    "McCaffrey Dragonriders Hardback"),
+    ("guy gavriel kay hardback signed",         "Guy Gavriel Kay Signed"),
+    ("china mieville signed hardback",          "China Miéville Signed"),
+    ("susanna clarke signed hardback",          "Susanna Clarke Signed"),
+    ("philip pullman signed hardback",          "Philip Pullman Signed"),
+
+    # Wargaming crossover / RPG hardbacks
+    ("warhammer fantasy roleplay hardback",     "WFRP Hardback"),
+    ("osprey wargames hardback",                "Osprey Wargames"),
+    ("dungeons dragons first edition",          "D&D 1e/2e"),
+    ("call of cthulhu hardback",                "Call of Cthulhu Hardback"),
+    ("vampire masquerade hardback",             "Vampire: The Masquerade"),
+    ("realm of chaos hardback warhammer",       "Realm of Chaos Original"),
+
+    # Comics / graphic novel hardbacks
+    ("2000 ad graphic novel hardback",          "2000 AD Hardback"),
+    ("judge dredd collection hardback",         "Judge Dredd Collection"),
+    ("alan moore hardback signed",              "Alan Moore Signed"),
+    ("sandman deluxe hardback gaiman",          "Sandman Deluxe"),
+    ("preacher complete hardback garth ennis",  "Preacher Complete"),
+    ("hellboy library edition hardback",        "Hellboy Library Edition"),
+
+    # Deluxe manga editions
+    ("berserk deluxe hardback english",         "Berserk Deluxe"),
+    ("vagabond hardback english",               "Vagabond Hardback"),
+    ("vinland saga hardback deluxe",            "Vinland Saga Deluxe"),
+    ("manga box set english out of print",      "Manga Box Sets OOP"),
+
+    # Classic collectibles
+    ("fighting fantasy hardback",               "Fighting Fantasy"),
+    ("discworld hardback signed",               "Discworld Signed"),
+    ("lord of the rings limited edition",       "LOTR Limited Editions"),
+    ("dune hardback limited edition",           "Dune Limited Editions"),
+    ("hitchhikers guide signed hardback",       "Hitchhiker's Guide Signed"),
+]
+
 # Subreddits monitored for market signals (via RSS, old.reddit.com) — run by scripts/weekly_digest.py
 REDDIT_SUBREDDITS: list[str] = [
     # Black Library / Warhammer

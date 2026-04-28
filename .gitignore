@@ -10,6 +10,7 @@ __pycache__/
 *.pyo
 *.pyd
 .venv/
+*.egg-info/
 
 # pytest / coverage
 .pytest_cache/
