@@ -4,6 +4,7 @@ import logging
 import httpx
 
 import config
+from db import get_last_alert_positions, get_setting, set_setting, store_feedback
 from models import Bargain, Listing
 
 log = logging.getLogger(__name__)
@@ -13,6 +14,7 @@ log = logging.getLogger(__name__)
 _SOURCE_LABEL: dict[str, str] = {
     "ebay": "eBay",
     "vinted": "Vinted",
+    "etsy": "Etsy",
 }
 
 
@@ -25,10 +27,17 @@ def format_bargains(bargains: list[Bargain]) -> str:
     lines = [f"Warhammer Scout — {len(bargains)} bargain(s) found today\n"]
 
     for i, b in enumerate(bargains, 1):
+        floor = f" | floor £{b.buyback_floor:.2f}" if b.buyback_floor else ""
+        flags = []
+        if b.multi_source:
+            flags.append("multi-source")
+        if b.stale:
+            flags.append("seen before")
+        flag_str = f" [{', '.join(flags)}]" if flags else ""
         lines.append(
-            f"{i}. [{_label(b.listing.source)}] {b.listing.title}\n"
-            f"   £{b.listing.price_gbp:.2f} (market ~£{b.market_price:.2f})"
-            f" — {b.discount_pct:.0%} off\n"
+            f"{i}.{flag_str} [{_label(b.listing.source)}] {b.listing.title}\n"
+            f"   £{b.listing.price_gbp:.2f} (market ~£{b.market_price:.2f}"
+            f"{floor}) — {b.discount_pct:.0%} off\n"
             f"   {b.listing.url}"
         )
 
@@ -122,10 +131,17 @@ def format_fantasy_bargains(bargains: list[Bargain]) -> str:
     lines = [f"Fantasy Scout — {len(bargains)} bargain(s) found today\n"]
 
     for i, b in enumerate(bargains, 1):
+        floor = f" | floor £{b.buyback_floor:.2f}" if b.buyback_floor else ""
+        flags = []
+        if b.multi_source:
+            flags.append("multi-source")
+        if b.stale:
+            flags.append("seen before")
+        flag_str = f" [{', '.join(flags)}]" if flags else ""
         lines.append(
-            f"{i}. [{_label(b.listing.source)}] {b.listing.title}\n"
-            f"   £{b.listing.price_gbp:.2f} (market ~£{b.market_price:.2f})"
-            f" — {b.discount_pct:.0%} off\n"
+            f"{i}.{flag_str} [{_label(b.listing.source)}] {b.listing.title}\n"
+            f"   £{b.listing.price_gbp:.2f} (market ~£{b.market_price:.2f}"
+            f"{floor}) — {b.discount_pct:.0%} off\n"
             f"   {b.listing.url}"
         )
 
@@ -144,6 +160,73 @@ def format_fantasy_bundles(bundles: list[Listing]) -> str:
         )
 
     return "\n".join(lines)
+
+
+def poll_feedback(bot_token: str, chat_id: str, bot: str = "wh") -> int:
+    """Poll Telegram for /good and /bad commands, store results in DB.
+
+    Users reply to their bargain alert with:
+      /good        — marks all items in the last alert as confirmed buys
+      /good 1 3    — marks items 1 and 3 as confirmed buys
+      /bad 2       — marks item 2 as a false positive
+
+    Returns the number of feedback items recorded.
+    """
+    if not bot_token or not chat_id:
+        return 0
+
+    offset_key = f"tg_offset_{bot}"
+    offset = int(get_setting(offset_key, "0"))
+    positions = get_last_alert_positions(bot)
+
+    try:
+        resp = httpx.get(
+            f"https://api.telegram.org/bot{bot_token}/getUpdates",
+            params={"offset": offset, "timeout": 0, "limit": 100},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        updates = resp.json().get("result", [])
+    except Exception as e:
+        log.warning(f"Telegram feedback poll failed ({bot}): {e}")
+        return 0
+
+    count = 0
+    new_offset = offset
+
+    for update in updates:
+        new_offset = max(new_offset, update["update_id"] + 1)
+        message = update.get("message", {})
+        if str(message.get("chat", {}).get("id", "")) != str(chat_id):
+            continue
+
+        text = (message.get("text") or "").strip().lower()
+        if text.startswith("/good"):
+            outcome = "good"
+        elif text.startswith("/bad"):
+            outcome = "bad"
+        else:
+            continue
+
+        parts = text.split(None, 1)
+        if len(parts) > 1:
+            raw_nums = parts[1].replace(",", " ").split()
+            nums = [int(n) for n in raw_nums if n.isdigit()]
+        else:
+            nums = list(positions.keys())
+
+        for pos in nums:
+            if pos in positions:
+                url, title = positions[pos]
+                store_feedback(url, title, outcome)
+                count += 1
+
+    if new_offset != offset:
+        set_setting(offset_key, str(new_offset))
+
+    if count:
+        log.info(f"Feedback: recorded {count} item(s) from Telegram ({bot})")
+    return count
 
 
 def send_fantasy_alert(text: str) -> None:

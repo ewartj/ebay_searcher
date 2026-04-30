@@ -63,6 +63,12 @@ def fetch_ebay_listings(
                         log.debug(f"eBay: skipping '{item.get('title', '')}' — condition '{condition}'")
                         continue
 
+                    isbn = None
+                    for aspect in item.get("localizedAspects") or []:
+                        if aspect.get("name") == "ISBN":
+                            isbn = aspect.get("value")
+                            break
+
                     listings.append(
                         Listing(
                             title=item.get("title", ""),
@@ -72,6 +78,7 @@ def fetch_ebay_listings(
                             condition=item.get("condition"),
                             image_url=item.get("image", {}).get("imageUrl"),
                             category=category,
+                            isbn=isbn,
                         )
                     )
 

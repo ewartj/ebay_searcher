@@ -160,19 +160,38 @@ _CLAUDE_PRICE_SYSTEM: dict[str, str] = {
 }
 
 
-def _claude_filter(titles: list[str], client: anthropic.Anthropic, category: str = "warhammer") -> list[str]:
+def _build_feedback_section(feedback: dict[str, list[str]]) -> str:
+    """Build a prompt section from accumulated user feedback examples."""
+    lines = []
+    if feedback.get("good"):
+        lines.append("User-confirmed bargains (include these types if seen):")
+        lines.extend(f"  - {t}" for t in feedback["good"])
+    if feedback.get("bad"):
+        lines.append("User-rejected false positives (exclude these types):")
+        lines.extend(f"  - {t}" for t in feedback["bad"])
+    return "\n".join(lines) + "\n\n" if lines else ""
+
+
+def _claude_filter(
+    titles: list[str],
+    client: anthropic.Anthropic,
+    category: str = "warhammer",
+    feedback: dict[str, list[str]] | None = None,
+) -> list[str]:
     """
     Ask Claude which titles are collectible hardbacks worth pricing.
     Returns index numbers so the response stays tiny regardless of title length.
     """
     numbered = "\n".join(f"{i + 1}. {t}" for i, t in enumerate(titles))
     label = "collectible hardbacks" if category == "fantasy" else "collectible BL hardbacks"
+    feedback_section = _build_feedback_section(feedback) if feedback else ""
     try:
         msg = client.messages.create(
             model=_MODEL,
             max_tokens=512,
             system=_CLAUDE_FILTER_SYSTEM.get(category, _CLAUDE_FILTER_SYSTEM["warhammer"]),
             messages=[{"role": "user", "content": (
+                feedback_section +
                 _CLAUDE_FILTER_PROMPT.get(category, _CLAUDE_FILTER_PROMPT["warhammer"]) +
                 "Reply with ONLY a JSON array of the LINE NUMBERS (integers) that pass. "
                 "Example: [1, 4, 7]. Empty array if none qualify. No markdown, no explanation.\n\n"
@@ -234,6 +253,7 @@ def _price_singles(
     singles: list[tuple[int, Listing]],
     category: str,
     client: anthropic.Anthropic,
+    feedback: dict[str, list[str]] | None = None,
 ) -> dict[int, tuple[float, str]]:
     """Run the 4-tier pricing pipeline for a batch of same-category singles."""
     priced: dict[int, tuple[float, str]] = {}
@@ -253,7 +273,7 @@ def _price_singles(
         log.info(
             f"[{category}] {len(unknown_titles)} titles not in price guide — sending to Claude filter"
         )
-        collectible = _claude_filter(unknown_titles, client, category)
+        collectible = _claude_filter(unknown_titles, client, category, feedback)
         collectible_set = set(collectible)
 
         if collectible:
@@ -285,6 +305,7 @@ def find_bargains(
     listings: list[Listing],
     *,
     claude_client: anthropic.Anthropic | None = None,
+    feedback: dict[str, list[str]] | None = None,
 ) -> tuple[list[Bargain], list[Listing], list[Bargain], list[Listing]]:
     """
     Returns (warhammer_bargains, warhammer_bundles, fantasy_bargains, fantasy_bundles).
@@ -330,8 +351,8 @@ def find_bargains(
         log.info(f"{total_bundles} bundle(s) flagged for manual review")
 
     # Price each category separately with appropriate Claude prompts
-    warhammer_priced = _price_singles(warhammer_singles, "warhammer", client)
-    fantasy_priced = _price_singles(fantasy_singles, "fantasy", client)
+    warhammer_priced = _price_singles(warhammer_singles, "warhammer", client, feedback)
+    fantasy_priced = _price_singles(fantasy_singles, "fantasy", client, feedback)
 
     def _apply_threshold(
         singles: list[tuple[int, Listing]],

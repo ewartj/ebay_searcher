@@ -27,6 +27,11 @@ TELEGRAM_DIGEST_CHAT_ID: str = os.environ["TELEGRAM_DIGEST_CHAT_ID"]
 TELEGRAM_FANTASY_BOT_TOKEN: str = os.environ.get("TELEGRAM_FANTASY_BOT_TOKEN", "")
 TELEGRAM_FANTASY_CHAT_ID: str = os.environ.get("TELEGRAM_FANTASY_CHAT_ID", "")
 
+# --- Etsy API (etsy.com/developers) ---
+# Optional — set to enable the Etsy source. Skips silently when empty.
+ETSY_API_KEY: str = os.environ.get("ETSY_API_KEY", "")
+
+
 # --- Lambda / deployment ---
 # True when running inside AWS Lambda
 IS_LAMBDA: bool = bool(os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
@@ -65,6 +70,7 @@ EXCLUDE_TITLE_KEYWORDS: list[str] = [
     "painting guide", "painting manual",
     "warhammer legends", "army guide", "starter set", "starter box",
     "index astartes",
+    "tour stamp", "event stamp", "bookplate",
 ]
 
 ACCEPTED_EBAY_CONDITIONS: set[str] = {"New", "Like New", "Very Good", "Good"}
@@ -107,6 +113,23 @@ VINTED_SEARCH_TERMS: list[tuple[str, int]] = [
 ]
 
 
+# Etsy search terms — (term, max_results) pairs.
+ETSY_SEARCH_TERMS: list[tuple[str, int]] = [
+    ("black library hardback signed",      30),
+    ("horus heresy hardback",              30),
+    ("warhammer hardback book",            20),
+    ("black library limited edition",      30),
+]
+
+# Etsy fantasy & sci-fi search terms.
+ETSY_FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
+    ("fantasy hardback signed first edition", 20),
+    ("joe abercrombie hardback",              20),
+    ("brandon sanderson hardback",            20),
+    ("terry pratchett signed hardback",       20),
+    ("neil gaiman signed hardback",           20),
+]
+
 # Fantasy & sci-fi eBay search terms — routed to the fantasy Telegram bot.
 FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
     # Joe Abercrombie
@@ -140,6 +163,20 @@ FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
     ("alastair reynolds hardback",          20),
     # Mark Lawrence
     ("mark lawrence hardback",              20),
+    # Subscription box special editions
+    ("illumicrate hardback",               30),
+    ("illumicrate signed",                 30),
+    ("owlcrate hardback",                  20),
+    ("owlcrate signed",                    20),
+    ("fairyloot hardback",                 20),
+    ("fairyloot signed",                   20),
+    # Authors common in subscription boxes not otherwise covered
+    ("v e schwab hardback",                20),
+    ("leigh bardugo hardback",             20),
+    ("sarah j maas hardback",              20),
+    ("r f kuang hardback",                 20),
+    ("samantha shannon hardback",          15),
+    ("naomi novik hardback signed",        15),
     # Bundles
     ("job lot fantasy hardback",            10),
     ("job lot sci-fi hardback",             10),
@@ -159,6 +196,13 @@ FANTASY_VINTED_SEARCH_TERMS: list[tuple[str, int]] = [
     ("terry pratchett signed hardback",     20),
     ("neil gaiman signed hardback",         20),
     ("malazan hardback",                    20),
+    ("illumicrate hardback",               20),
+    ("illumicrate signed",                 20),
+    ("owlcrate hardback",                  15),
+    ("fairyloot hardback",                 15),
+    ("v e schwab hardback",                15),
+    ("leigh bardugo hardback",             15),
+    ("sarah j maas hardback",              15),
     ("job lot fantasy hardback",            10),
 ]
 

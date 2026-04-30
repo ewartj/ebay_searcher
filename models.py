@@ -16,6 +16,7 @@ class Listing:
     image_url: str | None = None
     is_bundle: bool = False
     category: str = "warhammer"  # "warhammer" | "fantasy"
+    isbn: str | None = None
 
 
 @dataclass
@@ -24,3 +25,6 @@ class Bargain:
     market_price: float
     discount_pct: float  # 0.35 = 35% below market
     price_source: PriceSource
+    buyback_floor: float | None = None
+    multi_source: bool = False   # same ISBN seen on 2+ sources
+    stale: bool = False          # URL was alerted before (may not have sold)

@@ -11,9 +11,11 @@ from collections.abc import Callable
 
 from models import Listing
 from sources.ebay import fetch_ebay_listings
+from sources.etsy import fetch_etsy_listings
 from sources.vinted import fetch_vinted_listings
 
 SOURCES: dict[str, Callable[[], list[Listing]]] = {
     "ebay": fetch_ebay_listings,
     "vinted": fetch_vinted_listings,
+    "etsy": fetch_etsy_listings,
 }
