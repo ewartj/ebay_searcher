@@ -23,3 +23,7 @@ schedule_expression = "cron(0 7 * * ? *)"
 
 # Weekly on Sunday at 08:00 UTC (genre tracker + digest)
 weekly_schedule_expression = "cron(0 8 ? * SUN *)"
+
+# GitHub repository in owner/repo format — used to scope the OIDC deploy role
+# to pushes on the main branch only. Replace with your actual GitHub username/org.
+github_repo = "YOUR_GITHUB_USERNAME/ebay_searcher"

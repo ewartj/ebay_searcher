@@ -17,6 +17,7 @@ All notable changes to Warhammer Scout are recorded here, newest first.
 - **New fantasy authors** — V.E. Schwab, Leigh Bardugo, Sarah J. Maas, R.F. Kuang, Samantha Shannon, Naomi Novik, Holly Black
 - **Exclusions** — `tour stamp`, `event stamp`, `bookplate` added to exclusion list
 - **Security** — bot token masked in all exception logs; SQL placeholder pattern commented for clarity
+- **CI/CD auto-deploy** — `.github/workflows/deploy.yml` deploys to Lambda on merge to main via AWS OIDC (no stored credentials); Terraform provisions the OIDC provider and a least-privilege deploy role scoped to ECR push + `UpdateFunctionCode` on the three Lambda functions
 
 ---
 

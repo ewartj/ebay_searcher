@@ -1,0 +1,72 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+# id-token:write is required for OIDC credential exchange.
+# contents:read is required for actions/checkout.
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run tests
+        run: uv run pytest -v
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    # 'production' environment lets you add required reviewers or wait timers
+    # in GitHub → Settings → Environments if you want a manual approval gate.
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-west-2
+
+      - name: Log in to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        env:
+          IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/warhammer-scout:latest
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            -f deploy/Dockerfile.lambda \
+            -t "$IMAGE_URI" \
+            .
+          docker push "$IMAGE_URI"
+
+      - name: Update Lambda functions
+        env:
+          IMAGE_URI: ${{ steps.login-ecr.outputs.registry }}/warhammer-scout:latest
+        run: |
+          for fn in warhammer-scout warhammer-scout-weekly warhammer-scout-alerts; do
+            aws lambda update-function-code \
+              --function-name "$fn" \
+              --image-uri "$IMAGE_URI" \
+              --region eu-west-2 \
+              --output text --query FunctionArn
+          done

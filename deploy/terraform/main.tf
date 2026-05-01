@@ -308,3 +308,80 @@ resource "aws_cloudwatch_metric_alarm" "daily_not_run" {
   treat_missing_data  = "breaching"
   alarm_actions       = [aws_sns_topic.alerts.arn]
 }
+
+# ── GitHub Actions OIDC (CI/CD auto-deploy) ────────────────────────────────────
+
+resource "aws_iam_openid_connect_provider" "github" {
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
+  # AWS validates GitHub's OIDC via public key; thumbprints are required by the
+  # API but are no longer the primary verification mechanism. Both values cover
+  # the current and previous DigiCert intermediate CAs used by GitHub.
+  thumbprint_list = [
+    "6938fd4d98bab03faadb97b34396831e3780aea1",
+    "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
+  ]
+}
+
+data "aws_iam_policy_document" "github_deploy_assume" {
+  statement {
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.github.arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+    # Restrict to push events on main only — prevents any other branch or fork
+    # from assuming this role even if they can trigger the workflow.
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:${var.github_repo}:ref:refs/heads/master"]
+    }
+  }
+}
+
+resource "aws_iam_role" "github_deploy" {
+  name               = "ebay-searcher-github-deploy"
+  assume_role_policy = data.aws_iam_policy_document.github_deploy_assume.json
+}
+
+data "aws_iam_policy_document" "github_deploy" {
+  # ECR auth token — GetAuthorizationToken has no resource-level restriction.
+  statement {
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  # ECR image push — scoped to this specific repository.
+  statement {
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:PutImage",
+      "ecr:InitiateLayerUpload",
+      "ecr:UploadLayerPart",
+      "ecr:CompleteLayerUpload",
+    ]
+    resources = [aws_ecr_repository.app.arn]
+  }
+
+  # Lambda code update — scoped to the three deployed functions only.
+  statement {
+    actions = ["lambda:UpdateFunctionCode"]
+    resources = [
+      aws_lambda_function.app.arn,
+      aws_lambda_function.weekly.arn,
+      aws_lambda_function.alert.arn,
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "github_deploy" {
+  name   = "deploy-permissions"
+  role   = aws_iam_role.github_deploy.id
+  policy = data.aws_iam_policy_document.github_deploy.json
+}
