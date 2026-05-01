@@ -228,4 +228,108 @@ FANTASY_PRICE_GUIDE: dict[str, Entry] = {
     "market forces":                {"hardback": 20.0, "paperback": 7.0},
     "morgan signed":                45.0,
 
+    # -------------------------------------------------------------------------
+    # Subscription box special editions
+    # Illumicrate / OwlCrate / FairyLoot editions carry a premium over
+    # standard printings. More specific author+box keys below override these.
+    # -------------------------------------------------------------------------
+    "illumicrate signed":           75.0,
+    "illumicrate":                  35.0,
+    "owlcrate signed":              60.0,
+    "owlcrate":                     30.0,
+    "fairyloot signed":             60.0,
+    "fairyloot":                    30.0,
+
+    # -------------------------------------------------------------------------
+    # V.E. Schwab — Shades of Magic / Villains / standalone
+    # -------------------------------------------------------------------------
+    "a darker shade of magic":      {"hardback": 30.0, "paperback": 9.0},
+    "a gathering of shadows":       {"hardback": 25.0, "paperback": 8.0},
+    "a conjuring of light":         {"hardback": 25.0, "paperback": 8.0},
+    "shades of magic":              28.0,
+    "vicious schwab":               {"hardback": 28.0, "paperback": 9.0},
+    "vengeful schwab":              {"hardback": 25.0, "paperback": 8.0},
+    "the invisible life of addie":  {"hardback": 32.0, "paperback": 9.0},
+    "the archived":                 {"hardback": 22.0, "paperback": 7.0},
+    "schwab signed":                65.0,
+    "v e schwab signed":            65.0,
+
+    # -------------------------------------------------------------------------
+    # Leigh Bardugo — Grishaverse
+    # -------------------------------------------------------------------------
+    "shadow and bone":              {"hardback": 25.0, "paperback": 8.0},
+    "siege and storm":              {"hardback": 22.0, "paperback": 7.0},
+    "ruin and rising":              {"hardback": 22.0, "paperback": 7.0},
+    "six of crows":                 {"hardback": 35.0, "paperback": 10.0},
+    "crooked kingdom":              {"hardback": 28.0, "paperback": 9.0},
+    "king of scars":                {"hardback": 22.0, "paperback": 7.0},
+    "rule of wolves":               {"hardback": 22.0, "paperback": 7.0},
+    "ninth house bardugo":          {"hardback": 28.0, "paperback": 9.0},
+    "hell bent bardugo":            {"hardback": 22.0, "paperback": 7.0},
+    "bardugo signed":               60.0,
+
+    # -------------------------------------------------------------------------
+    # Sarah J. Maas — ACOTAR / Throne of Glass / Crescent City
+    # -------------------------------------------------------------------------
+    "a court of thorns and roses":  {"hardback": 28.0, "paperback": 9.0},
+    "a court of mist and fury":     {"hardback": 28.0, "paperback": 9.0},
+    "a court of wings and ruin":    {"hardback": 25.0, "paperback": 8.0},
+    "a court of frost and starlight":{"hardback": 22.0, "paperback": 7.0},
+    "a court of silver flames":     {"hardback": 25.0, "paperback": 8.0},
+    "throne of glass":              {"hardback": 25.0, "paperback": 8.0},
+    "crown of midnight":            {"hardback": 22.0, "paperback": 7.0},
+    "heir of fire":                 {"hardback": 22.0, "paperback": 7.0},
+    "queen of shadows":             {"hardback": 22.0, "paperback": 7.0},
+    "empire of storms":             {"hardback": 22.0, "paperback": 7.0},
+    "tower of dawn":                {"hardback": 22.0, "paperback": 7.0},
+    "kingdom of the wicked":        {"hardback": 22.0, "paperback": 7.0},
+    "house of earth and blood":     {"hardback": 25.0, "paperback": 8.0},
+    "house of sky and breath":      {"hardback": 22.0, "paperback": 7.0},
+    "maas signed":                  65.0,
+    "sarah j maas signed":          65.0,
+
+    # -------------------------------------------------------------------------
+    # R.F. Kuang
+    # -------------------------------------------------------------------------
+    "babel kuang":                  {"hardback": 30.0, "paperback": 9.0},
+    "the poppy war":                {"hardback": 28.0, "paperback": 9.0},
+    "the dragon republic":          {"hardback": 25.0, "paperback": 8.0},
+    "the burning god":              {"hardback": 25.0, "paperback": 8.0},
+    "yellowface kuang":             {"hardback": 22.0, "paperback": 7.0},
+    "kuang signed":                 55.0,
+    "r f kuang signed":             55.0,
+
+    # -------------------------------------------------------------------------
+    # Samantha Shannon — The Bone Season / Priory
+    # -------------------------------------------------------------------------
+    "the priory of the orange tree": {"hardback": 40.0, "paperback": 10.0},
+    "the bone season":              {"hardback": 22.0, "paperback": 7.0},
+    "the mime order":               {"hardback": 22.0, "paperback": 7.0},
+    "the song rising":              {"hardback": 22.0, "paperback": 7.0},
+    "a day of fallen night":        {"hardback": 28.0, "paperback": 8.0},
+    "shannon signed":               55.0,
+    "samantha shannon signed":      55.0,
+
+    # -------------------------------------------------------------------------
+    # Naomi Novik — Temeraire / standalone
+    # -------------------------------------------------------------------------
+    "his majesty's dragon":         {"hardback": 25.0, "paperback": 8.0},
+    "throne of jade":               {"hardback": 22.0, "paperback": 7.0},
+    "black powder war":             {"hardback": 22.0, "paperback": 7.0},
+    "uprooted novik":               {"hardback": 28.0, "paperback": 9.0},
+    "spinning silver":              {"hardback": 25.0, "paperback": 8.0},
+    "a deadly education":           {"hardback": 22.0, "paperback": 7.0},
+    "the last graduate":            {"hardback": 22.0, "paperback": 7.0},
+    "the golden enclaves":          {"hardback": 22.0, "paperback": 7.0},
+    "novik signed":                 50.0,
+
+    # -------------------------------------------------------------------------
+    # Holly Black — Folk of the Air / standalone
+    # -------------------------------------------------------------------------
+    "the cruel prince":             {"hardback": 25.0, "paperback": 8.0},
+    "the wicked king":              {"hardback": 22.0, "paperback": 7.0},
+    "the queen of nothing":         {"hardback": 22.0, "paperback": 7.0},
+    "the book of night":            {"hardback": 22.0, "paperback": 7.0},
+    "holly black signed":           50.0,
+
 }

@@ -17,6 +17,7 @@ from botocore.exceptions import ClientError
 import config
 from main import setup_logging
 from scripts.genre_tracker import run_genre_tracker
+from scripts.market_scout import run_market_scout
 from scripts.weekly_digest import run_weekly_digest
 
 
@@ -42,7 +43,7 @@ def lambda_handler(event: dict, context: object) -> dict:
             log.error("Failed to download DB from S3: %s", e)
             return {"statusCode": 500, "body": "S3 download failed"}
 
-    # --- Run weekly job ---
+    # --- Run critical weekly jobs (tracker + digest) ---
     try:
         tracker_result = run_genre_tracker()
         digest_result = run_weekly_digest()
@@ -51,8 +52,19 @@ def lambda_handler(event: dict, context: object) -> dict:
         return {"statusCode": 500, "body": "Weekly job raised an unexpected error"}
 
     if tracker_result != 0 or digest_result != 0:
-        log.error("Weekly job returned non-zero (tracker=%s digest=%s) — DB not uploaded", tracker_result, digest_result)
+        log.error(
+            "Weekly job returned non-zero (tracker=%s digest=%s) — DB not uploaded",
+            tracker_result, digest_result,
+        )
         return {"statusCode": 500, "body": "Weekly job failed"}
+
+    # --- Run market scout (supplementary — never blocks DB upload) ---
+    try:
+        scout_result = run_market_scout()
+        if scout_result != 0:
+            log.warning("Market scout returned non-zero (%s) — continuing to DB upload", scout_result)
+    except Exception:
+        log.exception("Market scout raised an unexpected exception — continuing to DB upload")
 
     # --- Upload DB back to S3 ---
     try:

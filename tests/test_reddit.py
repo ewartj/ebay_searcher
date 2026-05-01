@@ -48,6 +48,10 @@ def _recent_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _recent_rfc2822() -> str:
+    return datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000")
+
+
 def _old_iso(days: int = 10) -> str:
     return (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
 
@@ -141,7 +145,7 @@ class TestSignalDetection:
         assert "adaptation" in signals[0]["signal_types"]
 
     def test_scarcity_signal_publisher_feed(self):
-        xml = _rss_feed([{"title": "Sanderson limited edition sold out", "pubDate": "Sun, 20 Apr 2026 10:00:00 +0000"}])
+        xml = _rss_feed([{"title": "Sanderson limited edition sold out", "pubDate": _recent_rfc2822()}])
         with patch("sources.reddit.httpx.Client", return_value=_mock_client({"orbitbooks": xml})):
             signals = fetch_signals([], [("Orbit Books", "https://orbitbooks.net/feed/")])
         assert len(signals) == 1
@@ -177,7 +181,7 @@ class TestAuthorFilter:
 
     def test_publisher_feed_skips_author_filter(self):
         # No known author mentioned — should still be detected from a publisher feed
-        xml = _rss_feed([{"title": "New limited edition sold out already", "pubDate": "Sun, 20 Apr 2026 10:00:00 +0000"}])
+        xml = _rss_feed([{"title": "New limited edition sold out already", "pubDate": _recent_rfc2822()}])
         with patch("sources.reddit.httpx.Client", return_value=_mock_client({"gollancz": xml})):
             signals = fetch_signals([], [("Gollancz", "https://gollancz.co.uk/feed/")])
         assert len(signals) == 1
@@ -247,7 +251,7 @@ class TestSortedNewestFirst:
 class TestMultipleSources:
     def test_reddit_and_publisher_feeds_aggregated(self):
         reddit_xml = _atom_feed([{"title": "Abercrombie TV adaptation announced", "published": _recent_iso()}])
-        publisher_xml = _rss_feed([{"title": "New reprint sold out", "pubDate": "Sun, 20 Apr 2026 10:00:00 +0000"}])
+        publisher_xml = _rss_feed([{"title": "New reprint sold out", "pubDate": _recent_rfc2822()}])
         responses = {"/r/fantasy/": reddit_xml, "gollancz": publisher_xml}
         with patch("sources.reddit.httpx.Client", return_value=_mock_client(responses)):
             signals = fetch_signals(["fantasy"], [("Gollancz", "https://gollancz.co.uk/feed/")])

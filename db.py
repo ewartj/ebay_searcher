@@ -89,6 +89,32 @@ def init_db() -> None:
             );
             CREATE INDEX IF NOT EXISTS idx_sc_source   ON source_counts(source);
             CREATE INDEX IF NOT EXISTS idx_sc_scanned  ON source_counts(scanned_at);
+
+            CREATE TABLE IF NOT EXISTS alert_positions (
+                id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                scan_id  INTEGER,
+                position INTEGER NOT NULL,
+                url      TEXT NOT NULL,
+                title    TEXT NOT NULL,
+                bot      TEXT NOT NULL DEFAULT 'wh',
+                sent_at  TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_ap_bot_sent ON alert_positions(bot, sent_at);
+
+            CREATE TABLE IF NOT EXISTS feedback (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                url        TEXT NOT NULL,
+                title      TEXT NOT NULL,
+                outcome    TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_fb_outcome ON feedback(outcome);
+            CREATE INDEX IF NOT EXISTS idx_fb_created ON feedback(created_at);
+
+            CREATE TABLE IF NOT EXISTS settings (
+                key   TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
         """)
 
 
@@ -325,3 +351,99 @@ def get_recent_source_counts(source: str, limit: int = 3) -> list[int]:
             (source, limit),
         ).fetchall()
     return [r["count"] for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Alert position tracking (for feedback correlation)
+# ---------------------------------------------------------------------------
+
+def store_alert_positions(scan_id: int | None, bargains: list["Bargain"], bot: str = "wh") -> None:
+    """Store position→URL mapping for the most recently sent alert."""
+    if not bargains:
+        return
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        conn.execute("DELETE FROM alert_positions WHERE bot = ?", (bot,))
+        conn.executemany(
+            "INSERT INTO alert_positions (scan_id, position, url, title, bot, sent_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            [(scan_id, i + 1, b.listing.url, b.listing.title, bot, now)
+             for i, b in enumerate(bargains)],
+        )
+    log.debug(f"DB: stored {len(bargains)} alert positions for bot '{bot}'")
+
+
+def get_last_alert_positions(bot: str = "wh") -> dict[int, tuple[str, str]]:
+    """Return {position: (url, title)} for the most recently sent alert."""
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT position, url, title FROM alert_positions WHERE bot = ? ORDER BY position",
+            (bot,),
+        ).fetchall()
+    return {r["position"]: (r["url"], r["title"]) for r in rows}
+
+
+# ---------------------------------------------------------------------------
+# User feedback
+# ---------------------------------------------------------------------------
+
+def store_feedback(url: str, title: str, outcome: str) -> None:
+    """Persist a good/bad outcome for a bargain URL."""
+    now = datetime.now(timezone.utc).isoformat()
+    with _connect() as conn:
+        conn.execute(
+            "INSERT INTO feedback (url, title, outcome, created_at) VALUES (?, ?, ?, ?)",
+            (url, title, outcome, now),
+        )
+    log.info(f"DB: feedback '{outcome}' stored for '{title}'")
+
+
+def get_feedback_examples(limit: int = 10) -> dict[str, list[str]]:
+    """Return the most recent confirmed good/bad titles for Claude prompt enrichment."""
+    with _connect() as conn:
+        good = conn.execute(
+            "SELECT DISTINCT title FROM feedback WHERE outcome = 'good' "
+            "ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        bad = conn.execute(
+            "SELECT DISTINCT title FROM feedback WHERE outcome = 'bad' "
+            "ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return {
+        "good": [r["title"] for r in good],
+        "bad": [r["title"] for r in bad],
+    }
+
+
+def get_previously_alerted_urls(urls: list[str]) -> set[str]:
+    """Return URLs from the list that have ever been alerted before (stale detection)."""
+    if not urls:
+        return set()
+    # Placeholders are all '?' — values stay parameterised, no injection risk.
+    placeholders = ",".join("?" * len(urls))
+    with _connect() as conn:
+        rows = conn.execute(
+            f"SELECT url FROM alerted_listings WHERE url IN ({placeholders})",
+            urls,
+        ).fetchall()
+    return {r["url"] for r in rows}
+
+
+# ---------------------------------------------------------------------------
+# Settings (key-value store for small persistent state)
+# ---------------------------------------------------------------------------
+
+def get_setting(key: str, default: str = "0") -> str:
+    with _connect() as conn:
+        row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row else default
+
+
+def set_setting(key: str, value: str) -> None:
+    with _connect() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)",
+            (key, value),
+        )

@@ -15,26 +15,52 @@ from pathlib import Path
 import config
 from db import (
     filter_new_alerts,
+    get_feedback_examples,
+    get_previously_alerted_urls,
     get_recent_source_counts,
     init_db,
     record_alerted_urls,
     record_scan,
     record_source_counts,
+    store_alert_positions,
 )
 from notifier import (
     format_bargains,
     format_bundles,
     format_fantasy_bargains,
     format_fantasy_bundles,
+    poll_feedback,
     send_bargain_alert,
     send_fantasy_alert,
 )
 from pricing import find_bargains
 from sources import SOURCES
+from sources.buyback import enrich_bargains
 from sources.ebay import fetch_ebay_listings
+from sources.etsy import fetch_etsy_listings
 from sources.vinted import fetch_vinted_listings
 
 _LOG_FILE = Path(__file__).parent / "data" / "warhammer_scout.log"
+
+
+def _mark_multi_source(listings: list, bargains: list) -> None:
+    """Flag bargains whose ISBN appears in listings from 2+ distinct sources."""
+    isbn_sources: dict[str, set[str]] = {}
+    isbn_urls: dict[str, list[str]] = {}
+    for listing in listings:
+        if listing.isbn:
+            isbn_sources.setdefault(listing.isbn, set()).add(listing.source)
+            isbn_urls.setdefault(listing.isbn, []).append(listing.url)
+
+    multi_urls = {
+        url
+        for isbn, srcs in isbn_sources.items()
+        if len(srcs) >= 2
+        for url in isbn_urls.get(isbn, [])
+    }
+    for bargain in bargains:
+        if bargain.listing.url in multi_urls:
+            bargain.multi_source = True
 
 
 def setup_logging() -> None:
@@ -79,6 +105,10 @@ def run_scan(dry_run: bool = False) -> int:
             return 1
         log.info("=== Warhammer Scout scan starting ===")
         init_db()
+        # Poll for feedback from previous alerts before anything else
+        poll_feedback(config.TELEGRAM_BOT_TOKEN, config.TELEGRAM_CHAT_ID, bot="wh")
+        if config.TELEGRAM_FANTASY_BOT_TOKEN:
+            poll_feedback(config.TELEGRAM_FANTASY_BOT_TOKEN, config.TELEGRAM_FANTASY_CHAT_ID, bot="fa")
 
     listings = []
     source_listing_counts: dict[str, int] = {}
@@ -98,8 +128,9 @@ def run_scan(dry_run: bool = False) -> int:
 
     # Fetch Fantasy/Sci-fi listings (tagged category="fantasy")
     for source_name, fetch_fn, terms in [
-        ("ebay_fantasy",   fetch_ebay_listings,   config.FANTASY_SEARCH_TERMS),
-        ("vinted_fantasy", fetch_vinted_listings, config.FANTASY_VINTED_SEARCH_TERMS),
+        ("ebay_fantasy",   fetch_ebay_listings,    config.FANTASY_SEARCH_TERMS),
+        ("vinted_fantasy", fetch_vinted_listings,  config.FANTASY_VINTED_SEARCH_TERMS),
+        ("etsy_fantasy",   fetch_etsy_listings,    config.ETSY_FANTASY_SEARCH_TERMS),
     ]:
         try:
             fetched = fetch_fn(terms, "fantasy")
@@ -119,7 +150,21 @@ def run_scan(dry_run: bool = False) -> int:
     log.info(f"Total listings to evaluate: {len(listings)}")
 
     # --- Price check ---
-    wh_bargains, wh_bundles, fa_bargains, fa_bundles = find_bargains(listings)
+    feedback = get_feedback_examples() if not dry_run else {}
+    wh_bargains, wh_bundles, fa_bargains, fa_bundles = find_bargains(listings, feedback=feedback)
+    all_bargains = wh_bargains + fa_bargains
+
+    # Cross-source confirmation (same ISBN on multiple sources → stronger signal)
+    _mark_multi_source(listings, all_bargains)
+
+    # Stale detection (URL was alerted before — may not have sold)
+    stale_urls = get_previously_alerted_urls([b.listing.url for b in all_bargains]) if not dry_run else set()
+    for bargain in all_bargains:
+        if bargain.listing.url in stale_urls:
+            bargain.stale = True
+            log.info(f"Stale listing: {bargain.listing.title!r}")
+
+    enrich_bargains(all_bargains)
     log.info(
         f"Warhammer — bargains: {len(wh_bargains)}, bundles: {len(wh_bundles)} | "
         f"Fantasy — bargains: {len(fa_bargains)}, bundles: {len(fa_bundles)}"
@@ -138,7 +183,6 @@ def run_scan(dry_run: bool = False) -> int:
         return 0
 
     # --- Record to price history DB ---
-    all_bargains = wh_bargains + fa_bargains
     scan_id = record_scan(listings, all_bargains)
     record_source_counts(scan_id, source_listing_counts)
 
@@ -166,6 +210,7 @@ def run_scan(dry_run: bool = False) -> int:
     if new_wh_bargains:
         send_bargain_alert(format_bargains(new_wh_bargains))
         record_alerted_urls(new_wh_urls)
+        store_alert_positions(scan_id, new_wh_bargains, bot="wh")
     else:
         log.info("No new Warhammer bargains today")
 
@@ -190,6 +235,7 @@ def run_scan(dry_run: bool = False) -> int:
     if new_fa_bargains:
         send_fantasy_alert(format_fantasy_bargains(new_fa_bargains))
         record_alerted_urls(new_fa_urls)
+        store_alert_positions(scan_id, new_fa_bargains, bot="fa")
     else:
         log.info("No new Fantasy/Sci-fi bargains today")
 
