@@ -335,12 +335,16 @@ data "aws_iam_policy_document" "github_deploy_assume" {
       variable = "token.actions.githubusercontent.com:aud"
       values   = ["sts.amazonaws.com"]
     }
-    # Restrict to push events on main only — prevents any other branch or fork
-    # from assuming this role even if they can trigger the workflow.
+    # Accept both sub claim formats: the branch ref (emitted by the push
+    # trigger on the test job) and the environment name (emitted by the deploy
+    # job when environment: production is set). Both are scoped to this repo.
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repo}:ref:refs/heads/master"]
+      values   = [
+        "repo:${var.github_repo}:ref:refs/heads/master",
+        "repo:${var.github_repo}:environment:production",
+      ]
     }
   }
 }
