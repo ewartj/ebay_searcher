@@ -188,7 +188,8 @@ def poll_feedback(bot_token: str, chat_id: str, bot: str = "wh") -> int:
         resp.raise_for_status()
         updates = resp.json().get("result", [])
     except Exception as e:
-        log.warning(f"Telegram feedback poll failed ({bot}): {e}")
+        # Log only the exception type — the URL contains the live bot token
+        log.warning(f"Telegram feedback poll failed ({bot}): {type(e).__name__}")
         return 0
 
     count = 0

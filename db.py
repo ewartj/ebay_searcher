@@ -421,9 +421,11 @@ def get_previously_alerted_urls(urls: list[str]) -> set[str]:
     """Return URLs from the list that have ever been alerted before (stale detection)."""
     if not urls:
         return set()
+    # Placeholders are all '?' — values stay parameterised, no injection risk.
+    placeholders = ",".join("?" * len(urls))
     with _connect() as conn:
         rows = conn.execute(
-            f"SELECT url FROM alerted_listings WHERE url IN ({','.join('?' * len(urls))})",
+            f"SELECT url FROM alerted_listings WHERE url IN ({placeholders})",
             urls,
         ).fetchall()
     return {r["url"] for r in rows}

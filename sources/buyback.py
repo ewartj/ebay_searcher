@@ -41,8 +41,10 @@ def _lookup_wbb(isbn: str, client: httpx.Client) -> float | None:
             for key in ("price", "sell_price", "amount", "buy_price"):
                 if key in data:
                     return float(data[key])
+        else:
+            log.debug(f"WeBuyBooks returned HTTP {resp.status_code} for ISBN {isbn}")
     except Exception as e:
-        log.debug(f"WeBuyBooks lookup failed for ISBN {isbn}: {e}")
+        log.debug(f"WeBuyBooks lookup failed for ISBN {isbn}: {type(e).__name__}")
     return None
 
 
