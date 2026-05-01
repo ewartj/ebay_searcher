@@ -94,3 +94,8 @@ variable "lambda_memory" {
   type        = number
   default     = 512
 }
+
+variable "github_repo" {
+  description = "GitHub repository in owner/repo format — scopes the OIDC deploy role to pushes on main only (e.g. \"myuser/ebay_searcher\")"
+  type        = string
+}

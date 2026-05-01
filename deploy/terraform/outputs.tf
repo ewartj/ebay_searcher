@@ -27,3 +27,8 @@ output "weekly_lambda_function_name" {
   description = "Weekly market research Lambda name (for manual invocations)"
   value       = aws_lambda_function.weekly.function_name
 }
+
+output "github_deploy_role_arn" {
+  description = "IAM role ARN to set as AWS_DEPLOY_ROLE_ARN in GitHub Actions repository variables"
+  value       = aws_iam_role.github_deploy.arn
+}
