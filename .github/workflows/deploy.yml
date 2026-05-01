@@ -31,8 +31,6 @@ jobs:
   deploy:
     needs: test
     runs-on: ubuntu-latest
-    # 'production' environment lets you add required reviewers or wait timers
-    # in GitHub → Settings → Environments if you want a manual approval gate.
     environment: production
 
     steps:
