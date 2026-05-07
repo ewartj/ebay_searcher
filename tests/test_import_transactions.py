@@ -33,6 +33,10 @@ class TestOutcome:
         # sold=None must not raise TypeError in the gross-margin fallback
         assert _outcome(5.0, None, None, None) == "bad"
 
+    def test_none_sold_gotrek_title_returns_bad(self):
+        # sold=None with a Gotrek title must not raise TypeError in the Gotrek block
+        assert _outcome(5.0, None, None, None, "gotrek and Felix omnibus 1") == "bad"
+
     # Gotrek omnibus 1 bundling special case
     def test_gotrek_omnibus1_sold_under_6_is_good(self):
         assert _outcome(2.0, 5.0, None, None, "gotrek and Felix omnibus 1") == "good"

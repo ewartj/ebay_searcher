@@ -51,6 +51,9 @@ def is_bl(title: str) -> bool:
 
 def _outcome(bought, sold, fees, postage, title: str = "") -> str:
     """Return 'good' or 'bad' based on whether the transaction was profitable."""
+    if not isinstance(sold, (int, float)):
+        return "bad"
+
     # Gotrek omnibus 1 sold cheaply (<£6) is intentional — kept for bundling
     # with omnibuses 2 & 3 where the bundle fetches £38-82.
     t = title.lower()
@@ -62,9 +65,6 @@ def _outcome(bought, sold, fees, postage, title: str = "") -> str:
         and sold < 6
     ):
         return "good"
-
-    if not isinstance(sold, (int, float)):
-        return "bad"
 
     # If we have full cost data, use net profit
     if all(isinstance(v, (int, float)) for v in [bought, fees, postage]):
