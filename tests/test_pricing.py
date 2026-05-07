@@ -23,12 +23,12 @@ from pricing import (
 
 class TestLookupPriceGuide:
     def test_plain_float_entry_hardback(self):
-        # "titanicus": 35.0 — plain float means hardback-only
-        assert _lookup_price_guide("Titanicus by Dan Abnett") == 35.0
+        # "daemon world": 30.0 — plain float means hardback-only
+        assert _lookup_price_guide("Daemon World by Ben Counter") == 30.0
 
     def test_plain_float_entry_paperback_returns_none(self):
         # Plain float = hardback only; paperback falls through to Claude
-        assert _lookup_price_guide("Titanicus PB") is None
+        assert _lookup_price_guide("Daemon World PB") is None
 
     def test_dict_entry_hardback(self):
         # "horus rising": {"hardback": 20.0, "paperback": 5.0}
