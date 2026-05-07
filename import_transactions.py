@@ -21,29 +21,26 @@ import openpyxl
 XLSX_PATH = Path(sys.argv[1]) if len(sys.argv) > 1 else Path.home() / "Downloads/ebay.xlsx"
 
 BL_KEYWORDS = [
-    "warhammer", "heresy", "horus", "space marine", "eldar", "chaos",
-    "necron", "imperium", "black library", "gotrek", "felix", "gaunt",
-    "eisenhorn", "ravenor", "night lords", "primarch", "siege of terra",
-    "ahriman", "word bearer", "iron warrior", "death guard", "plague",
+    "warhammer", "heresy", "horus", "space marine", "eldar",
+    "necron", "black library", "gotrek", "felix", "gaunt",
+    "eisenhorn", "ravenor", "night lord", "primarch", "siege of terra",
+    "ahriman", "word bearer", "iron warrior", "death guard",
     "void stalker", "soul hunter", "blood reaver", "ultramar", "ultramarine",
-    "salamander", "dark angel", "blood angel", "space wolf", "grey knight",
-    "inquisitor", "mechanicum", "mechanicus", "adeptus", "imperial fist",
-    "iron hand", "raven guard", "white scar", "night lord", "alpha legion",
-    "thousand son", "world eater", "emperor", "terra", "30k", "40k",
-    "cadia", "armageddon", "sabbat", "tanith", "gaunts ghost",
-    "malus darkblade", "gotrek", "genevieve", "sigmar", "age of sigmar",
-    "warhammer fantasy", "archaon", "nagash", "skaven", "dwarf",
+    "dark angel", "blood angel", "space wolf", "grey knight",
+    "inquisitor", "mechanicum", "mechanicus", "adeptus",
+    "cadia", "sabbat", "tanith",
+    "malus darkblade", "genevieve", "sigmar", "archaon", "nagash",
     "black legion", "talon of horus", "clonelord", "manflayer",
     "lords of silence", "broken city", "deathwatch", "macharian",
     "nightbringer", "titanicus", "double eagle", "helsreach",
     "storm of iron", "brothers of the snake", "daemon world",
-    "soul drinker", "blood raven", "grey knight", "enforcer",
+    "soul drinker", "blood raven", "enforcer", "salamander",
     "tome of fire", "bastion wars", "cassius", "word bearers",
-    "the red path", "soul wars", "vampir genev", "drakenfels",
+    "the red path", "soul wars", "vampire genevieve", "drakenfels",
     "thunder and steel", "elves omnibus", "knights of caliban",
     "legacy of caliban", "lord of the night", "wrath of iron",
     "the magos", "praetorian of dorn", "master of sanctity",
-    "beast arises", "witch finder", "vampire genevieve",
+    "beast arises", "witch finder",
 ]
 
 
@@ -66,6 +63,9 @@ def _outcome(bought, sold, fees, postage, title: str = "") -> str:
     ):
         return "good"
 
+    if not isinstance(sold, (int, float)):
+        return "bad"
+
     # If we have full cost data, use net profit
     if all(isinstance(v, (int, float)) for v in [bought, fees, postage]):
         net = sold - fees - postage - bought
@@ -73,7 +73,8 @@ def _outcome(bought, sold, fees, postage, title: str = "") -> str:
     # Fall back to gross margin when fees/postage unknown
     if isinstance(bought, (int, float)):
         return "good" if sold > bought else "bad"
-    return "good"
+    # No cost data at all — can't determine profitability
+    return "bad"
 
 
 def extract_transactions(path: Path) -> list[dict]:
@@ -86,13 +87,13 @@ def extract_transactions(path: Path) -> list[dict]:
     for sheet_name in ("23-25", "25"):
         ws = wb[sheet_name]
         for row in ws.iter_rows(min_row=11, max_row=ws.max_row, values_only=True):
-            if len(row) < 15:
+            if len(row) < 15:  # need at least up to sold (idx 14)
                 continue
             title = row[2]
-            bought   = row[3]
-            sold     = row[14]
-            fees     = row[15]
-            postage  = row[16]
+            bought      = row[3]
+            sold        = row[14]
+            fees        = row[15] if len(row) > 15 else None
+            postage     = row[16] if len(row) > 16 else None
             bought_date = row[0]
             sold_date   = row[11]
             if not (title and isinstance(title, str)):
@@ -113,13 +114,13 @@ def extract_transactions(path: Path) -> list[dict]:
     # bought_date=A(0), sold_date=K(10)
     ws26 = wb["26"]
     for row in ws26.iter_rows(min_row=8, max_row=ws26.max_row, values_only=True):
-        if len(row) < 14:
+        if len(row) < 14:  # need at least up to sold (idx 13)
             continue
         title = row[1]
-        bought   = row[2]
-        sold     = row[13]
-        fees     = row[14]
-        postage  = row[15]
+        bought      = row[2]
+        sold        = row[13]
+        fees        = row[14] if len(row) > 14 else None
+        postage     = row[15] if len(row) > 15 else None
         bought_date = row[0]
         sold_date   = row[10]
         if not (title and isinstance(title, str)):
@@ -138,10 +139,17 @@ def extract_transactions(path: Path) -> list[dict]:
     return [r for r in rows if is_bl(r["title"])]
 
 
-def _to_iso(dt) -> str:
+def _to_iso(dt) -> str | None:
     if isinstance(dt, datetime):
         return dt.replace(tzinfo=timezone.utc).isoformat()
-    return datetime.now(timezone.utc).isoformat()
+    # Excel sometimes stores dates as integer serials (days since 1899-12-30)
+    if isinstance(dt, (int, float)):
+        try:
+            from datetime import timedelta
+            return (datetime(1899, 12, 30, tzinfo=timezone.utc) + timedelta(days=dt)).isoformat()
+        except (ValueError, OverflowError):
+            pass
+    return None
 
 
 def already_imported(db_path: str) -> bool:
@@ -173,9 +181,12 @@ def seed_db(transactions: list[dict], db_path: str) -> None:
         bought_at = _to_iso(tx["bought_date"])
         title = tx["title"]
 
-        market_rows.append((scan_id, title, tx["sold"], "transaction_history", sold_at))
+        # Only insert into date-range-queried tables when the date is known;
+        # an epoch sentinel would silently corrupt trend/history queries.
+        if sold_at is not None:
+            market_rows.append((scan_id, title, tx["sold"], "transaction_history", sold_at))
 
-        if tx["bought"] is not None:
+        if tx["bought"] is not None and bought_at is not None:
             listing_rows.append((scan_id, title, tx["bought"], "transaction_history", bought_at))
 
         key = title.lower()
@@ -183,7 +194,7 @@ def seed_db(transactions: list[dict], db_path: str) -> None:
             seen_feedback.add(key)
             url = f"tx://{key.replace(' ', '-')}"
             outcome = _outcome(tx["bought"], tx["sold"], tx["fees"], tx["postage"], title)
-            feedback_rows.append((url, title, outcome, sold_at))
+            feedback_rows.append((url, title, outcome, sold_at or "unknown"))
 
     conn.executemany(
         "INSERT INTO market_prices (scan_id, title, market_price, price_source, scanned_at) "

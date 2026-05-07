@@ -30,6 +30,11 @@ class TestLookupPriceGuide:
         # Plain float = hardback only; paperback falls through to Claude
         assert _lookup_price_guide("Daemon World PB") is None
 
+    def test_dict_entry_both_formats(self):
+        # "double eagle" was converted to {"hardback": 35.0, "paperback": 10.0}
+        assert _lookup_price_guide("Double Eagle Hardback") == 35.0
+        assert _lookup_price_guide("Double Eagle Paperback") == 10.0
+
     def test_dict_entry_hardback(self):
         # "horus rising": {"hardback": 20.0, "paperback": 5.0}
         assert _lookup_price_guide("Horus Rising Hardback") == 20.0
