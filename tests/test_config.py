@@ -45,6 +45,9 @@ class TestSearchTermIntegrity:
     def test_etsy_fantasy_no_duplicates(self):
         self._check_no_duplicates(config.ETSY_FANTASY_SEARCH_TERMS, "ETSY_FANTASY_SEARCH_TERMS")
 
+    def test_depop_fantasy_no_duplicates(self):
+        self._check_no_duplicates(config.DEPOP_FANTASY_SEARCH_TERMS, "DEPOP_FANTASY_SEARCH_TERMS")
+
     def test_all_search_term_lists_well_formed(self):
         all_lists = [
             ("SEARCH_TERMS", config.SEARCH_TERMS),
@@ -53,6 +56,7 @@ class TestSearchTermIntegrity:
             ("ETSY_FANTASY_SEARCH_TERMS", config.ETSY_FANTASY_SEARCH_TERMS),
             ("FANTASY_SEARCH_TERMS", config.FANTASY_SEARCH_TERMS),
             ("FANTASY_VINTED_SEARCH_TERMS", config.FANTASY_VINTED_SEARCH_TERMS),
+            ("DEPOP_FANTASY_SEARCH_TERMS", config.DEPOP_FANTASY_SEARCH_TERMS),
         ]
         for name, terms in all_lists:
             for item in terms:

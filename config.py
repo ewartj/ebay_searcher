@@ -31,6 +31,12 @@ TELEGRAM_FANTASY_CHAT_ID: str = os.environ.get("TELEGRAM_FANTASY_CHAT_ID", "")
 # Optional — set to enable the Etsy source. Skips silently when empty.
 ETSY_API_KEY: str = os.environ.get("ETSY_API_KEY", "")
 
+# --- Depop ---
+# Optional Bearer token for Depop's internal API. Anonymous search usually
+# works without one; set this if you start seeing 401 responses.
+# Obtain by inspecting browser network requests on depop.com.
+DEPOP_SESSION_TOKEN: str = os.environ.get("DEPOP_SESSION_TOKEN", "")
+
 
 # --- Lambda / deployment ---
 # True when running inside AWS Lambda
@@ -74,7 +80,13 @@ EXCLUDE_TITLE_KEYWORDS: list[str] = [
 ]
 
 ACCEPTED_EBAY_CONDITIONS: set[str] = {"New", "Like New", "Very Good", "Good"}
-ACCEPTED_VINTED_CONDITIONS: set[str] = {"new_with_tags", "new_without_tags", "very_good", "good"}
+ACCEPTED_VINTED_CONDITIONS: set[str] = {
+    # Current Vinted API format (title case)
+    "New with tags", "New without tags", "Very good", "Good",
+    # Legacy snake_case format (kept for safety)
+    "new_with_tags", "new_without_tags", "very_good", "good",
+}
+ACCEPTED_DEPOP_CONDITIONS: set[str] = {"new_with_tags", "like_new", "good", "new"}
 
 # Warn via Telegram if Vinted returns 0 listings this many scans in a row
 # (usually means the session cookie has expired)
@@ -236,6 +248,21 @@ FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
     ("naomi novik hardback signed",        15),
     ("nicholas eames hardback",            20),
     ("john gwynne hardback",               20),
+    # Subscription box hallmark terms — catch box editions mis-listed without the box name
+    ("sprayed edges hardback",             20),
+    ("signed bookplate hardback fantasy",  15),
+    # High-value series × box combinations
+    ("six of crows illumicrate",           20),
+    ("shadow and bone illumicrate",        20),
+    ("shades of magic illumicrate",        20),
+    ("night circus illumicrate",           20),
+    ("cruel prince illumicrate",           20),
+    ("caraval illumicrate",                20),
+    ("these violent delights illumicrate", 15),
+    ("priory of the orange tree illumicrate", 15),
+    ("lies of locke lamora broken binding", 20),
+    ("blade itself broken binding",        20),
+    ("gentleman bastards hardback",        20),
     # Bundles
     ("job lot fantasy hardback",            10),
     ("job lot sci-fi hardback",             10),
@@ -266,7 +293,34 @@ FANTASY_VINTED_SEARCH_TERMS: list[tuple[str, int]] = [
     ("sarah j maas hardback",              15),
     ("nicholas eames hardback",            15),
     ("john gwynne hardback",               15),
+    # Hallmark + series × box terms
+    ("sprayed edges hardback",             15),
+    ("six of crows illumicrate",           15),
+    ("shadow and bone illumicrate",        15),
+    ("shades of magic illumicrate",        15),
+    ("night circus illumicrate",           15),
+    ("lies of locke lamora broken binding", 15),
+    ("gentleman bastards hardback",        15),
     ("job lot fantasy hardback",            10),
+] + _subscription_box_terms(max_results=15)
+
+# Depop fantasy search terms — box-edition and hallmark focused.
+DEPOP_FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
+    ("illumicrate hardback",               20),
+    ("illumicrate signed",                 20),
+    ("broken binding hardback",            20),
+    ("broken binding signed",              20),
+    ("owlcrate hardback",                  15),
+    ("fairyloot hardback",                 15),
+    ("sprayed edges hardback",             20),
+    ("sprayed edges signed hardback",      20),
+    ("six of crows illumicrate",           20),
+    ("shadow and bone illumicrate",        15),
+    ("shades of magic illumicrate",        15),
+    ("night circus illumicrate",           15),
+    ("cruel prince illumicrate",           15),
+    ("caraval illumicrate",                15),
+    ("lies of locke lamora broken binding", 15),
 ] + _subscription_box_terms(max_results=15)
 
 # Weekly genre price tracking — fantasy/sci-fi authors and series.
@@ -410,6 +464,10 @@ REDDIT_SUBREDDITS: list[str] = [
     "sciencefiction",
     "scifi",
     "books",
+    # Subscription box communities
+    "Illumicrate",
+    "bookboxes",
+    "OwlCrate",
 ]
 
 # Publisher and trade RSS feeds — (display_name, feed_url)

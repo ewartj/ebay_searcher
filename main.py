@@ -36,6 +36,7 @@ from notifier import (
 from pricing import find_bargains
 from sources import SOURCES
 from sources.buyback import enrich_bargains
+from sources.depop import fetch_depop_listings
 from sources.ebay import fetch_ebay_listings
 from sources.etsy import fetch_etsy_listings
 from sources.vinted import fetch_vinted_listings
@@ -131,6 +132,7 @@ def run_scan(dry_run: bool = False) -> int:
         ("ebay_fantasy",   fetch_ebay_listings,    config.FANTASY_SEARCH_TERMS),
         ("vinted_fantasy", fetch_vinted_listings,  config.FANTASY_VINTED_SEARCH_TERMS),
         ("etsy_fantasy",   fetch_etsy_listings,    config.ETSY_FANTASY_SEARCH_TERMS),
+        ("depop_fantasy",  fetch_depop_listings,   config.DEPOP_FANTASY_SEARCH_TERMS),
     ]:
         try:
             fetched = fetch_fn(terms, "fantasy")
