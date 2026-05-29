@@ -124,6 +124,56 @@ ETSY_SEARCH_TERMS: list[tuple[str, int]] = [
     ("black library limited edition",      30),
 ]
 
+
+# --- Subscription box author watchlist ---
+# Add any author whose special editions from these boxes you want to track.
+# Search terms are auto-generated as "[author] [box]" for every combination.
+SUBSCRIPTION_BOX_AUTHORS: list[str] = [
+    # Grimdark / epic fantasy
+    "robin hobb",
+    "joe abercrombie",
+    "nicholas eames",
+    "mark lawrence",
+    "john gwynne",
+    "anna smith spark",
+    "scott lynch",
+    "peter mclean",
+    "evan winter",
+    "guy gavriel kay",
+    # Epic / popular fantasy
+    "brandon sanderson",
+    "sebastien de castell",
+    "naomi novik",
+    # Subscription box staples (Illumicrate / OwlCrate / FairyLoot)
+    "v e schwab",
+    "leigh bardugo",
+    "sarah j maas",
+    "r f kuang",
+    "samantha shannon",
+    "tasha suri",
+    "erin morgenstern",
+    "holly black",
+    "stephanie garber",
+    "chloe gong",
+]
+
+SUBSCRIPTION_BOXES: list[str] = [
+    "illumicrate",
+    "broken binding",
+    "owlcrate",
+    "fairyloot",
+]
+
+
+def _subscription_box_terms(max_results: int = 20) -> list[tuple[str, int]]:
+    """Generate [author] [box] cross-product search terms from the watchlists."""
+    return [
+        (f"{author} {box}", max_results)
+        for author in SUBSCRIPTION_BOX_AUTHORS
+        for box in SUBSCRIPTION_BOXES
+    ]
+
+
 # Etsy fantasy & sci-fi search terms.
 ETSY_FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
     ("fantasy hardback signed first edition", 20),
@@ -131,7 +181,9 @@ ETSY_FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
     ("brandon sanderson hardback",            20),
     ("terry pratchett signed hardback",       20),
     ("neil gaiman signed hardback",           20),
-]
+    ("broken binding signed hardback",        20),
+] + _subscription_box_terms(max_results=15)
+
 
 # Fantasy & sci-fi eBay search terms — routed to the fantasy Telegram bot.
 FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
@@ -166,9 +218,11 @@ FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
     ("alastair reynolds hardback",          20),
     # Mark Lawrence
     ("mark lawrence hardback",              20),
-    # Subscription box special editions
+    # Subscription box special editions — standalone box terms
     ("illumicrate hardback",               30),
     ("illumicrate signed",                 30),
+    ("broken binding hardback",            30),
+    ("broken binding signed",              30),
     ("owlcrate hardback",                  20),
     ("owlcrate signed",                    20),
     ("fairyloot hardback",                 20),
@@ -180,10 +234,12 @@ FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
     ("r f kuang hardback",                 20),
     ("samantha shannon hardback",          15),
     ("naomi novik hardback signed",        15),
+    ("nicholas eames hardback",            20),
+    ("john gwynne hardback",               20),
     # Bundles
     ("job lot fantasy hardback",            10),
     ("job lot sci-fi hardback",             10),
-]
+] + _subscription_box_terms()
 
 # Fantasy & sci-fi Vinted search terms.
 FANTASY_VINTED_SEARCH_TERMS: list[tuple[str, int]] = [
@@ -201,13 +257,17 @@ FANTASY_VINTED_SEARCH_TERMS: list[tuple[str, int]] = [
     ("malazan hardback",                    20),
     ("illumicrate hardback",               20),
     ("illumicrate signed",                 20),
+    ("broken binding hardback",            20),
+    ("broken binding signed",              20),
     ("owlcrate hardback",                  15),
     ("fairyloot hardback",                 15),
     ("v e schwab hardback",                15),
     ("leigh bardugo hardback",             15),
     ("sarah j maas hardback",              15),
+    ("nicholas eames hardback",            15),
+    ("john gwynne hardback",               15),
     ("job lot fantasy hardback",            10),
-]
+] + _subscription_box_terms(max_results=15)
 
 # Weekly genre price tracking — fantasy/sci-fi authors and series.
 # (search_term, display_label) — run by scripts/genre_tracker.py

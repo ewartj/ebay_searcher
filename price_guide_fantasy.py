@@ -239,6 +239,8 @@ FANTASY_PRICE_GUIDE: dict[str, Entry] = {
     "owlcrate":                     30.0,
     "fairyloot signed":             60.0,
     "fairyloot":                    30.0,
+    "broken binding signed":        65.0,
+    "broken binding":               30.0,
 
     # -------------------------------------------------------------------------
     # V.E. Schwab — Shades of Magic / Villains / standalone
