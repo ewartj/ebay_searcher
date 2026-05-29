@@ -295,6 +295,27 @@ GENRE_SEARCH_TERMS: list[tuple[str, str]] = [
     ("stormlight archive hardback",       "Stormlight Archive"),
     ("kingkiller chronicle hardback",     "Kingkiller Chronicle"),
     ("name of the wind hardback",         "Name of the Wind"),
+    # Subscription box watchlist (grimdark / epic)
+    ("nicholas eames hardback",           "Nicholas Eames"),
+    ("john gwynne hardback",              "John Gwynne"),
+    ("anna smith spark hardback",         "Anna Smith Spark"),
+    ("scott lynch hardback",              "Scott Lynch"),
+    ("peter mclean hardback",             "Peter McLean"),
+    ("evan winter hardback",              "Evan Winter"),
+    ("guy gavriel kay hardback",          "Guy Gavriel Kay"),
+    ("sebastien de castell hardback",     "Sebastien de Castell"),
+    # Subscription box watchlist (Illumicrate / OwlCrate / FairyLoot)
+    ("v e schwab hardback",               "V.E. Schwab"),
+    ("leigh bardugo hardback",            "Leigh Bardugo"),
+    ("sarah j maas hardback",             "Sarah J. Maas"),
+    ("r f kuang hardback",                "R.F. Kuang"),
+    ("samantha shannon hardback",         "Samantha Shannon"),
+    ("naomi novik hardback",              "Naomi Novik"),
+    ("tasha suri hardback",               "Tasha Suri"),
+    ("erin morgenstern hardback",         "Erin Morgenstern"),
+    ("holly black hardback",              "Holly Black"),
+    ("stephanie garber hardback",         "Stephanie Garber"),
+    ("chloe gong hardback",               "Chloe Gong"),
 ]
 
 # Candidate niches probed weekly by scripts/market_scout.py.
