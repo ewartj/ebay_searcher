@@ -172,11 +172,11 @@ def run_scan(dry_run: bool = False) -> int:
 
     if dry_run:
         if wh_bargains:
-            log.info("Dry-run Warhammer bargains:\n" + format_bargains(wh_bargains))
+            log.info("Dry-run Warhammer bargains:\n" + format_bargains(wh_bargains[:config.MAX_ALERTS_PER_RUN]))
         if wh_bundles:
             log.info(f"Dry-run Warhammer bundles: {len(wh_bundles)} found")
         if fa_bargains:
-            log.info("Dry-run Fantasy bargains:\n" + format_fantasy_bargains(fa_bargains))
+            log.info("Dry-run Fantasy bargains:\n" + format_fantasy_bargains(fa_bargains[:config.MAX_ALERTS_PER_RUN]))
         if fa_bundles:
             log.info(f"Dry-run Fantasy bundles: {len(fa_bundles)} found")
         log.info("=== Warhammer Scout scan complete (DRY RUN) ===")
@@ -207,6 +207,11 @@ def run_scan(dry_run: bool = False) -> int:
     if skipped:
         log.info(f"Dedup: {skipped} Warhammer bargain(s) suppressed")
 
+    if len(new_wh_bargains) > config.MAX_ALERTS_PER_RUN:
+        log.info(f"Capping Warhammer alerts at {config.MAX_ALERTS_PER_RUN} (had {len(new_wh_bargains)})")
+        new_wh_bargains = new_wh_bargains[:config.MAX_ALERTS_PER_RUN]
+        new_wh_urls = {b.listing.url for b in new_wh_bargains}
+
     if new_wh_bargains:
         send_bargain_alert(format_bargains(new_wh_bargains))
         record_alerted_urls(new_wh_urls)
@@ -231,6 +236,11 @@ def run_scan(dry_run: bool = False) -> int:
     skipped = len(fa_bargains) - len(new_fa_bargains)
     if skipped:
         log.info(f"Dedup: {skipped} Fantasy bargain(s) suppressed")
+
+    if len(new_fa_bargains) > config.MAX_ALERTS_PER_RUN:
+        log.info(f"Capping Fantasy alerts at {config.MAX_ALERTS_PER_RUN} (had {len(new_fa_bargains)})")
+        new_fa_bargains = new_fa_bargains[:config.MAX_ALERTS_PER_RUN]
+        new_fa_urls = {b.listing.url for b in new_fa_bargains}
 
     if new_fa_bargains:
         send_fantasy_alert(format_fantasy_bargains(new_fa_bargains))
