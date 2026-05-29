@@ -239,6 +239,27 @@ FANTASY_PRICE_GUIDE: dict[str, Entry] = {
     "owlcrate":                     30.0,
     "fairyloot signed":             60.0,
     "fairyloot":                    30.0,
+    "broken binding signed":        65.0,
+    "broken binding":               30.0,
+    # -------------------------------------------------------------------------
+    # Series × box combinations — more specific keys, override the flat box price above.
+    # Prices reflect UK eBay secondary market for these specific editions.
+    # -------------------------------------------------------------------------
+    "six of crows illumicrate":                 90.0,
+    "shadow and bone illumicrate":              70.0,
+    "shades of magic illumicrate":              75.0,
+    "night circus illumicrate":                 80.0,
+    "starless sea illumicrate":                 65.0,
+    "cruel prince illumicrate":                 70.0,
+    "caraval illumicrate":                      65.0,
+    "these violent delights illumicrate":       55.0,
+    "priory of the orange tree illumicrate":    70.0,
+    "babel illumicrate":                        65.0,
+    "poppy war illumicrate":                    60.0,
+    "lies of locke lamora broken binding":      75.0,
+    "blade itself broken binding":              70.0,
+    "best served cold broken binding":          65.0,
+    "faithful and the fallen broken binding":   60.0,
 
     # -------------------------------------------------------------------------
     # V.E. Schwab — Shades of Magic / Villains / standalone

@@ -1,12 +1,13 @@
 """Vinted source — searches Vinted UK for Black Library books.
 
 Vinted has no official public API. This module calls their internal catalog
-endpoint using a session cookie + CSRF token obtained from the homepage.
-Usage is low-frequency (once a day) and for personal, non-commercial use.
+endpoint. curl_cffi is used instead of httpx because Vinted's Cloudflare
+protection checks TLS fingerprints — curl_cffi impersonates Chrome at that
+level, which plain httpx/requests cannot do.
 """
 import logging
 
-import httpx
+from curl_cffi import requests as curl_requests
 
 import config
 from models import Listing
@@ -16,17 +17,13 @@ log = logging.getLogger(__name__)
 _BASE = "https://www.vinted.co.uk"
 _CATALOG_URL = f"{_BASE}/api/v2/catalog/items"
 
-_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (X11; Linux x86_64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/124.0.0.0 Safari/537.36"
-    ),
+# curl_cffi sets browser-appropriate headers automatically when impersonating;
+# we only override the fields Vinted specifically looks for.
+_EXTRA_HEADERS = {
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "en-GB,en;q=0.9",
     "Referer": _BASE,
 }
-
 
 
 def _parse_price(raw: object) -> float | None:
@@ -56,21 +53,21 @@ def fetch_vinted_listings(
     listings: list[Listing] = []
     seen_ids: set[str] = set()
 
-    with httpx.Client(timeout=20, follow_redirects=True) as client:
-        # Step 1 — hit homepage to get session cookie + CSRF token
+    with curl_requests.Session() as session:
+        # Step 1 — hit homepage to establish session cookies (Cloudflare handshake)
         try:
-            client.get(_BASE, headers=_HEADERS)
-        except httpx.HTTPError as e:
+            session.get(_BASE, headers=_EXTRA_HEADERS, impersonate="chrome")
+        except Exception as e:
             log.warning(f"Vinted: failed to get session — {e}")
             return []
 
-        cookies = dict(client.cookies)
+        cookies = dict(session.cookies)
         if not cookies:
             log.warning("Vinted: no session cookies received — skipping")
             return []
 
-        # Step 2 — build request headers with CSRF token if present
-        req_headers = dict(_HEADERS)
+        # Step 2 — attach CSRF token if present
+        req_headers = dict(_EXTRA_HEADERS)
         csrf = cookies.get("XSRF-TOKEN") or cookies.get("csrf_token")
         if csrf:
             req_headers["X-CSRF-Token"] = csrf
@@ -80,7 +77,7 @@ def fetch_vinted_listings(
         # Step 3 — search each term
         for term, limit in terms:
             try:
-                resp = client.get(
+                resp = session.get(
                     _CATALOG_URL,
                     headers=req_headers,
                     params={
@@ -88,11 +85,11 @@ def fetch_vinted_listings(
                         "per_page": limit,
                         "order": "newest_first",
                     },
+                    impersonate="chrome",
                 )
                 resp.raise_for_status()
                 data = resp.json()
 
-                # Log the top-level keys on first call to help diagnose structure changes
                 log.debug(f"Vinted '{term}' response keys: {list(data.keys())}")
 
                 items = data.get("items", [])
@@ -135,9 +132,7 @@ def fetch_vinted_listings(
                         )
                     )
 
-            except httpx.HTTPStatusError as e:
-                log.warning(f"Vinted search failed for '{term}': HTTP {e.response.status_code}")
             except Exception as e:
-                log.warning(f"Vinted unexpected error for '{term}': {e}")
+                log.warning(f"Vinted search failed for '{term}': {e}")
 
     return listings
