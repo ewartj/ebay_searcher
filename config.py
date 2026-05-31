@@ -99,7 +99,7 @@ BARGAIN_THRESHOLD: float = 0.70
 MIN_PROFIT: float = 10.0
 
 # Maximum number of bargains to alert per run (best discounts sent first).
-MAX_ALERTS_PER_RUN: int = 5
+MAX_ALERTS_PER_RUN: int = 20
 
 # Search terms used on eBay — (term, max_results) pairs.
 # Broad terms get fewer results to avoid noise; focused terms get more.
