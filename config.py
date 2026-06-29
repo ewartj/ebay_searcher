@@ -79,6 +79,29 @@ EXCLUDE_TITLE_KEYWORDS: list[str] = [
     "tour stamp", "event stamp", "bookplate",
 ]
 
+# Fantasy-specific non-book merch to exclude (subscription boxes often include these).
+FANTASY_EXCLUDE_KEYWORDS: list[str] = [
+    "bookmark", "bookmarks",
+    "enamel pin", "lapel pin",
+    "sticker", "stickers",
+    "tote bag",
+    "candle", "candles",
+    "mug", "mugs",
+    "keyring", "key ring", "keychain", "key chain",
+    "plush", "plushie",
+    "t-shirt", "tshirt",
+    "funko",
+    "map print",
+    "trinket",
+    "lithograph",
+    "tarot", "tray", "dice", "puzzle", "jigsaw",
+    "sleep mask",
+]
+
+# Minimum listing price (GBP) for fantasy listings.
+# Ignores cheap singles that aren't worth reselling.
+FANTASY_MIN_LISTING_PRICE: float = 20.0
+
 ACCEPTED_EBAY_CONDITIONS: set[str] = {"New", "Like New", "Very Good", "Good"}
 ACCEPTED_VINTED_CONDITIONS: set[str] = {
     # Current Vinted API format (title case)
@@ -198,129 +221,123 @@ ETSY_FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
 
 
 # Fantasy & sci-fi eBay search terms — routed to the fantasy Telegram bot.
+# Focused on subscription box duologies & trilogies (best resale margin).
+# Single books are kept only where a signed/box combination makes them high-value.
 FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
-    # Joe Abercrombie
-    ("joe abercrombie hardback",            30),
-    ("first law hardback",                  30),
-    # Brandon Sanderson
-    ("brandon sanderson hardback",          30),
-    ("stormlight archive hardback",         30),
-    ("mistborn hardback",                   30),
-    # Dragonlance
-    ("dragonlance hardback",                20),
-    ("dragonlance chronicles hardback",     20),
-    # Patrick Rothfuss
-    ("name of the wind hardback",           20),
-    ("patrick rothfuss hardback",           20),
-    # Robin Hobb
-    ("robin hobb hardback",                 30),
-    ("farseer hardback",                    20),
-    # Steven Erikson / Malazan
-    ("steven erikson hardback",             20),
-    ("malazan hardback",                    20),
-    # Iain M. Banks / Culture
-    ("iain m banks hardback",               20),
-    ("culture series hardback",             20),
-    # Terry Pratchett & Neil Gaiman (signed/collectible)
-    ("terry pratchett signed hardback",     20),
-    ("neil gaiman signed hardback",         20),
-    # Peter F. Hamilton
-    ("peter f hamilton hardback",           20),
-    # Alastair Reynolds
-    ("alastair reynolds hardback",          20),
-    # Mark Lawrence
-    ("mark lawrence hardback",              20),
-    # Subscription box special editions — standalone box terms
-    ("illumicrate hardback",               30),
-    ("illumicrate signed",                 30),
-    ("broken binding hardback",            30),
-    ("broken binding signed",              30),
-    ("owlcrate hardback",                  20),
-    ("owlcrate signed",                    20),
-    ("fairyloot hardback",                 20),
-    ("fairyloot signed",                   20),
-    # Authors common in subscription boxes not otherwise covered
-    ("v e schwab hardback",                20),
-    ("leigh bardugo hardback",             20),
-    ("sarah j maas hardback",              20),
-    ("r f kuang hardback",                 20),
-    ("samantha shannon hardback",          15),
-    ("naomi novik hardback signed",        15),
-    ("nicholas eames hardback",            20),
-    ("john gwynne hardback",               20),
-    # Subscription box hallmark terms — catch box editions mis-listed without the box name
-    ("sprayed edges hardback",             20),
-    ("signed bookplate hardback fantasy",  15),
-    # High-value series × box combinations
-    ("six of crows illumicrate",           20),
-    ("shadow and bone illumicrate",        20),
-    ("shades of magic illumicrate",        20),
-    ("night circus illumicrate",           20),
-    ("cruel prince illumicrate",           20),
-    ("caraval illumicrate",                20),
-    ("these violent delights illumicrate", 15),
+    # --- Multi-book sets from subscription boxes (highest resale value) ---
+    ("illumicrate duology",                   25),
+    ("illumicrate trilogy",                   25),
+    ("illumicrate complete series",           20),
+    ("illumicrate set hardback",              20),
+    ("broken binding duology",                25),
+    ("broken binding trilogy",                25),
+    ("broken binding complete",               20),
+    ("broken binding set hardback",           20),
+    ("owlcrate duology",                      20),
+    ("owlcrate trilogy",                      20),
+    ("fairyloot duology",                     20),
+    ("fairyloot trilogy",                     20),
+    # --- Subscription box general — signed & special editions ---
+    ("illumicrate hardback",                  30),
+    ("illumicrate signed",                    30),
+    ("broken binding hardback",               30),
+    ("broken binding signed",                 30),
+    ("owlcrate hardback",                     20),
+    ("owlcrate signed",                       20),
+    ("fairyloot hardback",                    20),
+    ("fairyloot signed",                      20),
+    # --- Hallmark terms: sprayed edges = almost always a subscription box edition ---
+    ("sprayed edges hardback",                20),
+    ("sprayed edges signed hardback",         15),
+    ("signed bookplate hardback fantasy",     15),
+    # --- High-value series × box combinations ---
+    ("six of crows illumicrate",              20),
+    ("shadow and bone illumicrate",           20),
+    ("shades of magic illumicrate",           20),
+    ("night circus illumicrate",              20),
+    ("cruel prince illumicrate",              20),
+    ("caraval illumicrate",                   20),
+    ("these violent delights illumicrate",    15),
     ("priory of the orange tree illumicrate", 15),
-    ("lies of locke lamora broken binding", 20),
-    ("blade itself broken binding",        20),
-    ("gentleman bastards hardback",        20),
-    # Bundles
-    ("job lot fantasy hardback",            10),
-    ("job lot sci-fi hardback",             10),
+    ("lies of locke lamora broken binding",   20),
+    ("blade itself broken binding",           20),
+    ("gentleman bastards hardback",           20),
+    # --- High-value single exception: The Devils (Abercrombie) ---
+    ("abercrombie the devils",                25),
+    ("the devils broken binding",             25),
+    ("the devils illumicrate",                25),
+    # --- Bundles / job lots ---
+    ("job lot fantasy hardback",              10),
+    ("job lot sci-fi hardback",               10),
 ] + _subscription_box_terms()
 
 # Fantasy & sci-fi Vinted search terms.
+# Focused on subscription box duologies & trilogies and high-value signed sets.
 FANTASY_VINTED_SEARCH_TERMS: list[tuple[str, int]] = [
-    ("joe abercrombie hardback",            30),
-    ("first law hardback",                  30),
-    ("brandon sanderson hardback",          30),
-    ("stormlight archive hardback",         30),
-    ("mistborn hardback",                   20),
-    ("dragonlance hardback",                20),
-    ("name of the wind hardback",           20),
-    ("robin hobb hardback",                 30),
-    ("iain m banks hardback",               20),
-    ("terry pratchett signed hardback",     20),
-    ("neil gaiman signed hardback",         20),
-    ("malazan hardback",                    20),
-    ("illumicrate hardback",               20),
-    ("illumicrate signed",                 20),
-    ("broken binding hardback",            20),
-    ("broken binding signed",              20),
-    ("owlcrate hardback",                  15),
-    ("fairyloot hardback",                 15),
-    ("v e schwab hardback",                15),
-    ("leigh bardugo hardback",             15),
-    ("sarah j maas hardback",              15),
-    ("nicholas eames hardback",            15),
-    ("john gwynne hardback",               15),
-    # Hallmark + series × box terms
-    ("sprayed edges hardback",             15),
-    ("six of crows illumicrate",           15),
-    ("shadow and bone illumicrate",        15),
-    ("shades of magic illumicrate",        15),
-    ("night circus illumicrate",           15),
-    ("lies of locke lamora broken binding", 15),
-    ("gentleman bastards hardback",        15),
-    ("job lot fantasy hardback",            10),
+    # --- Multi-book sets from subscription boxes ---
+    ("illumicrate duology",                  20),
+    ("illumicrate trilogy",                  20),
+    ("illumicrate set hardback",             15),
+    ("broken binding duology",               20),
+    ("broken binding trilogy",               20),
+    ("broken binding set hardback",          15),
+    ("owlcrate duology",                     15),
+    ("owlcrate trilogy",                     15),
+    ("fairyloot duology",                    15),
+    ("fairyloot trilogy",                    15),
+    # --- Subscription box general ---
+    ("illumicrate hardback",                 20),
+    ("illumicrate signed",                   20),
+    ("broken binding hardback",              20),
+    ("broken binding signed",                20),
+    ("owlcrate hardback",                    15),
+    ("fairyloot hardback",                   15),
+    # --- Hallmark terms ---
+    ("sprayed edges hardback",               15),
+    # --- High-value series × box ---
+    ("six of crows illumicrate",             15),
+    ("shadow and bone illumicrate",          15),
+    ("shades of magic illumicrate",          15),
+    ("night circus illumicrate",             15),
+    ("lies of locke lamora broken binding",  15),
+    ("gentleman bastards hardback",          15),
+    # --- High-value single exception: The Devils (Abercrombie) ---
+    ("abercrombie the devils",               20),
+    ("the devils broken binding",            20),
+    ("the devils illumicrate",               20),
+    # --- Bundles ---
+    ("job lot fantasy hardback",             10),
 ] + _subscription_box_terms(max_results=15)
 
 # Depop fantasy search terms — box-edition and hallmark focused.
 DEPOP_FANTASY_SEARCH_TERMS: list[tuple[str, int]] = [
-    ("illumicrate hardback",               20),
-    ("illumicrate signed",                 20),
-    ("broken binding hardback",            20),
-    ("broken binding signed",              20),
-    ("owlcrate hardback",                  15),
-    ("fairyloot hardback",                 15),
-    ("sprayed edges hardback",             20),
-    ("sprayed edges signed hardback",      20),
-    ("six of crows illumicrate",           20),
-    ("shadow and bone illumicrate",        15),
-    ("shades of magic illumicrate",        15),
-    ("night circus illumicrate",           15),
-    ("cruel prince illumicrate",           15),
-    ("caraval illumicrate",                15),
-    ("lies of locke lamora broken binding", 15),
+    # --- Multi-book sets (Depop skews younger audience — box sets popular) ---
+    ("illumicrate duology",                  20),
+    ("illumicrate trilogy",                  20),
+    ("broken binding duology",               20),
+    ("broken binding trilogy",               20),
+    ("owlcrate duology",                     15),
+    ("fairyloot duology",                    15),
+    # --- Subscription box general ---
+    ("illumicrate hardback",                 20),
+    ("illumicrate signed",                   20),
+    ("broken binding hardback",              20),
+    ("broken binding signed",                20),
+    ("owlcrate hardback",                    15),
+    ("fairyloot hardback",                   15),
+    ("sprayed edges hardback",               20),
+    ("sprayed edges signed hardback",        20),
+    # --- High-value series × box ---
+    ("six of crows illumicrate",             20),
+    ("shadow and bone illumicrate",          15),
+    ("shades of magic illumicrate",          15),
+    ("night circus illumicrate",             15),
+    ("cruel prince illumicrate",             15),
+    ("caraval illumicrate",                  15),
+    ("lies of locke lamora broken binding",  15),
+    # --- High-value single exception: The Devils (Abercrombie) ---
+    ("abercrombie the devils",               20),
+    ("the devils broken binding",            20),
 ] + _subscription_box_terms(max_results=15)
 
 # Weekly genre price tracking — fantasy/sci-fi authors and series.

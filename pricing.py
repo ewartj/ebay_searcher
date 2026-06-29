@@ -50,6 +50,14 @@ _EXCLUDE_RE = re.compile(
     re.IGNORECASE,
 )
 
+_FANTASY_EXCLUDE_RE = re.compile(
+    "|".join(
+        r"\b" + re.escape(kw).replace(r"\ ", r"\s+") + r"\b"
+        for kw in config.FANTASY_EXCLUDE_KEYWORDS
+    ),
+    re.IGNORECASE,
+)
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -140,9 +148,12 @@ _CLAUDE_FILTER_PROMPT: dict[str, str] = {
     ),
     "fantasy": (
         "From the numbered list below, identify titles that are FANTASY or SCIENCE FICTION "
-        "HARDBACKS likely to have meaningful secondary market resale value (first editions, "
-        "signed copies, numbered copies, or standard hardbacks of popular series by "
-        "notable authors).\n"
+        "HARDBACKS likely to have meaningful secondary market resale value.\n"
+        "PRIORITISE: subscription box editions (Illumicrate, Broken Binding, OwlCrate, "
+        "FairyLoot) — especially duologies, trilogies, and complete series sets. "
+        "Sprayed-edge editions and signed sets are high value. Single books are worth "
+        "including ONLY if they are signed, a box special edition, or clearly high-value "
+        "(e.g. Joe Abercrombie The Devils).\n"
         "EXCLUDE: paperbacks, ebooks, audio, art books, roleplaying rulebooks, non-fiction, "
         "board game books, or anything that is not prose fiction in hardback format.\n"
     ),
@@ -332,6 +343,12 @@ def find_bargains(
     for i, listing in enumerate(listings):
         is_bundle = bool(_BUNDLE_RE.search(listing.title))
         if listing.category == "fantasy":
+            if listing.price_gbp < config.FANTASY_MIN_LISTING_PRICE:
+                log.debug(f"[fantasy] Below min price (£{listing.price_gbp:.2f}): {listing.title!r}")
+                continue
+            if _FANTASY_EXCLUDE_RE.search(listing.title or ""):
+                log.debug(f"[fantasy] Non-book merch excluded: {listing.title!r}")
+                continue
             if is_bundle:
                 listing.is_bundle = True
                 fantasy_bundles.append(listing)
