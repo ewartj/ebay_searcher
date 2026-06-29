@@ -373,13 +373,40 @@ class TestFindBargains:
 
     def test_fantasy_listing_routed_to_fantasy_results(self):
         from models import Listing as L
+        # Six of Crows hardback: £35 market; £22 = 63% → bargain, £13 profit → above MIN_PROFIT
         listing = L(
-            title="The Blade Itself Hardback", price_gbp=10.0,
+            title="Six of Crows Hardback", price_gbp=22.0,
             url="https://test.example", source="ebay", category="fantasy",
         )
         _, _, fa_bargains, _ = find_bargains([listing])
         assert len(fa_bargains) == 1
         assert fa_bargains[0].price_source == "price_guide"
+
+    def test_fantasy_listing_below_min_price_excluded(self):
+        from models import Listing as L
+        listing = L(
+            title="The Blade Itself Hardback", price_gbp=19.99,
+            url="https://test.example", source="ebay", category="fantasy",
+        )
+        _, _, fa_bargains, fa_bundles = find_bargains([listing])
+        assert fa_bargains == []
+        assert fa_bundles == []
+
+    def test_fantasy_merch_excluded(self):
+        from models import Listing as L
+        for title in [
+            "Illumicrate Bookmark Six of Crows",
+            "Broken Binding Enamel Pin Fantasy",
+            "OwlCrate Candle Sarah J Maas",
+            "FairyLoot Tote Bag",
+        ]:
+            listing = L(
+                title=title, price_gbp=25.0,
+                url="https://test.example", source="ebay", category="fantasy",
+            )
+            _, _, fa_bargains, fa_bundles = find_bargains([listing])
+            assert fa_bargains == [], f"Merch should be excluded: {title!r}"
+            assert fa_bundles == [], f"Merch should be excluded: {title!r}"
 
     def test_fantasy_bundle_flagged_without_warhammer_re(self):
         from models import Listing as L

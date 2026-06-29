@@ -24,6 +24,10 @@ FANTASY_PRICE_GUIDE: dict[str, Entry] = {
     # Signed/limited Abercrombie fetch premium
     "abercrombie signed":           55.0,
     "first law signed":             50.0,
+    # The Devils — anticipated standalone/new series; box editions will command a premium
+    "abercrombie the devils":       55.0,
+    "the devils broken binding":    75.0,
+    "the devils illumicrate":       75.0,
 
     # -------------------------------------------------------------------------
     # Brandon Sanderson — Stormlight Archive
@@ -233,6 +237,7 @@ FANTASY_PRICE_GUIDE: dict[str, Entry] = {
     # Illumicrate / OwlCrate / FairyLoot editions carry a premium over
     # standard printings. More specific author+box keys below override these.
     # -------------------------------------------------------------------------
+    # Single editions
     "illumicrate signed":           75.0,
     "illumicrate":                  35.0,
     "owlcrate signed":              60.0,
@@ -241,6 +246,18 @@ FANTASY_PRICE_GUIDE: dict[str, Entry] = {
     "fairyloot":                    30.0,
     "broken binding signed":        65.0,
     "broken binding":               30.0,
+    # Duologies and trilogies command a significant premium — two/three special
+    # editions sold together at a discount vs individual resale prices.
+    "illumicrate duology":          110.0,
+    "illumicrate trilogy":          160.0,
+    "illumicrate set":              110.0,
+    "broken binding duology":       100.0,
+    "broken binding trilogy":       145.0,
+    "broken binding set":           100.0,
+    "owlcrate duology":             90.0,
+    "owlcrate trilogy":             130.0,
+    "fairyloot duology":            90.0,
+    "fairyloot trilogy":            130.0,
     # -------------------------------------------------------------------------
     # Series × box combinations — more specific keys, override the flat box price above.
     # Prices reflect UK eBay secondary market for these specific editions.
